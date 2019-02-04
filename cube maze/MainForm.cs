@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace cube_maze
 {
-    public partial class Form1 : Form
+    public partial class Main : Form
     {
         byte[,] currentMaze;
         bool isPlaying = false;
@@ -20,7 +20,7 @@ namespace cube_maze
         Point imageSize = new Point();
         List<Point> neighbors = new List<Point>();
 
-        public Form1()
+        public Main()
         {
             InitializeComponent();
             maze2D();
@@ -113,23 +113,26 @@ namespace cube_maze
         }
         void Draw()
         {
-            Bitmap bmp = new Bitmap(imageSize.X, imageSize.Y);
-            Graphics g = Graphics.FromImage(bmp);
-            double Step = imageSize.X*1.0 / currentMaze.GetLength(0);
-            if (!isPlaying)
-                g.FillRectangle(new SolidBrush(Color.Green), (float)(start.X * Step), (float)(start.Y * Step), (float)Step - 1, (float)Step - 1);
-            else
+            if (pictureBox1.Height > 0)
             {
-                Brush b = new SolidBrush(Color.Gray);
-                if(position == finish)
-                    g.FillRectangle(new SolidBrush(Color.Green), (float)(finish.X * Step), (float)(finish.Y * Step), (float)Step - 1, (float)Step - 1);
-                else g.FillRectangle(b, (float)(position.X * Step), (float)(position.Y * Step), (float)Step - 1, (float)Step - 1);
-                for(int i = 0; i < neighbors.Count; i++)
-                    if(neighbors[i] == finish)
+                Bitmap bmp = new Bitmap(imageSize.X, imageSize.Y);
+                Graphics g = Graphics.FromImage(bmp);
+                double Step = imageSize.X * 1.0 / currentMaze.GetLength(0);
+                if (!isPlaying)
+                    g.FillRectangle(new SolidBrush(Color.Green), (float)(start.X * Step), (float)(start.Y * Step), (float)Step - 1, (float)Step - 1);
+                else
+                {
+                    Brush b = new SolidBrush(Color.Gray);
+                    if (position == finish)
                         g.FillRectangle(new SolidBrush(Color.Green), (float)(finish.X * Step), (float)(finish.Y * Step), (float)Step - 1, (float)Step - 1);
-                    else g.FillRectangle(b, (float)(neighbors[i].X * Step), (float)(neighbors[i].Y * Step), (float)Step - 1, (float)Step - 1);
+                    else g.FillRectangle(b, (float)(position.X * Step), (float)(position.Y * Step), (float)Step - 1, (float)Step - 1);
+                    for (int i = 0; i < neighbors.Count; i++)
+                        if (neighbors[i] == finish)
+                            g.FillRectangle(new SolidBrush(Color.Green), (float)(finish.X * Step), (float)(finish.Y * Step), (float)Step - 1, (float)Step - 1);
+                        else g.FillRectangle(b, (float)(neighbors[i].X * Step), (float)(neighbors[i].Y * Step), (float)Step - 1, (float)Step - 1);
+                }
+                pictureBox1.Image = bmp;
             }
-            pictureBox1.Image = bmp;
         }
         Point isPosition(Point Mouse)
         {
