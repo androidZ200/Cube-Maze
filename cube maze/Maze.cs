@@ -15,6 +15,7 @@ namespace cube_maze
         public Point Start { get; private set; }
         public int Height { get; private set; }
         public int Width { get; private set; }
+        private Bitmap[] blocks = new Bitmap[16];
 
         public Labyrinth()
         {
@@ -32,14 +33,14 @@ namespace cube_maze
         }
         public Bitmap GetImage(Color BackGround, Color Line, Color SFPoibt)
         {
-            Bitmap bmp = new Bitmap(Width * 40, Height * 40);
+            Bitmap bmp = new Bitmap(Width * 160, Height * 160);
             Graphics g = Graphics.FromImage(bmp);
             g.Clear(BackGround);
             for(int j = 0; j < Height; j++)
                 for(int i = 0; i < Width; i++)
-                    g.DrawImage(GetBlockImage(new Point(i, j), Line), i * 40, j * 40);
-            g.FillEllipse(new SolidBrush(SFPoibt), Start.X * 40 + 8, Start.Y * 40 + 8, 24, 24);
-            g.FillEllipse(new SolidBrush(SFPoibt), Finish.X * 40 + 8, Finish.Y * 40 + 8, 24, 24);
+                    g.DrawImage(GetBlockImage(new Point(i, j), Line), i * 160, j * 160);
+            g.FillEllipse(new SolidBrush(SFPoibt), Start.X * 160 + 32, Start.Y * 160 + 32, 96, 96);
+            g.FillEllipse(new SolidBrush(SFPoibt), Finish.X * 160 + 32, Finish.Y * 160 + 32, 96, 96);
             return bmp;
         }
 
@@ -126,26 +127,28 @@ namespace cube_maze
         }
         private Bitmap GetBlockImage(Point block, Color line)
         {
-            Bitmap bmp = new Bitmap(40, 40);
+            if (blocks[Maze[block.X, block.Y]] != null) return blocks[Maze[block.X, block.Y]];
+            Bitmap bmp = new Bitmap(160, 160);
             Graphics g = Graphics.FromImage(bmp);
-            g.FillEllipse(new SolidBrush(line), 4, 4, 32, 32);
+            g.FillEllipse(new SolidBrush(line), 16, 16, 128, 128);
             for(int i = 0; i < 4; i++)
                 if((Maze[block.X, block.Y] & (1 << i)) != 0)
                     switch (i)
                     {
                         case 0:
-                            g.FillRectangle(new SolidBrush(line), 4, 0, 32, 20);
+                            g.FillRectangle(new SolidBrush(line), 16, 0, 128, 80);
                             break;
                         case 1:
-                            g.FillRectangle(new SolidBrush(line), 20, 4, 20, 32);
+                            g.FillRectangle(new SolidBrush(line), 80, 16, 80, 128);
                             break;
                         case 2:
-                            g.FillRectangle(new SolidBrush(line), 4, 20, 32, 20);
+                            g.FillRectangle(new SolidBrush(line), 16, 80, 128, 80);
                             break;
                         case 3:
-                            g.FillRectangle(new SolidBrush(line), 0, 4, 20, 32);
+                            g.FillRectangle(new SolidBrush(line), 0, 16, 80, 128);
                             break;
                     }
+            blocks[Maze[block.X, block.Y]] = bmp;
             return bmp;
         }
     }
