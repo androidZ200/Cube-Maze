@@ -2,9 +2,9 @@ C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\bin\Debug\cube maze.exe
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\bin\Debug\cube maze.pdb
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube maze.csprojAssemblyReference.cache
-C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube_maze.Form1.resources
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube_maze.Properties.Resources.resources
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube maze.csproj.GenerateResource.cache
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube maze.csproj.CoreCompileInputs.cache
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube maze.exe
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube maze.pdb
+C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube_maze.MainForm.resources
