@@ -30,6 +30,18 @@ namespace cube_maze
             if ((t & 1) != 0) neighbors.Add(new Point(Position.X, Position.Y - 1));
             return neighbors;
         }
+        public Bitmap GetImage(Color BackGround, Color Line, Color SFPoibt)
+        {
+            Bitmap bmp = new Bitmap(Width * 40, Height * 40);
+            Graphics g = Graphics.FromImage(bmp);
+            g.Clear(BackGround);
+            for(int j = 0; j < Height; j++)
+                for(int i = 0; i < Width; i++)
+                    g.DrawImage(GetBlockImage(new Point(i, j), Line), i * 40, j * 40);
+            g.FillEllipse(new SolidBrush(SFPoibt), Start.X * 40 + 8, Start.Y * 40 + 8, 24, 24);
+            g.FillEllipse(new SolidBrush(SFPoibt), Finish.X * 40 + 8, Finish.Y * 40 + 8, 24, 24);
+            return bmp;
+        }
 
         private void GenerateMaze()
         {
@@ -111,6 +123,30 @@ namespace cube_maze
             Finish = new Point((Width - 1) / 2, 0);
             Start = new Point((Width - 1) / 2, Height - 1);
             Maze = field;
+        }
+        private Bitmap GetBlockImage(Point block, Color line)
+        {
+            Bitmap bmp = new Bitmap(40, 40);
+            Graphics g = Graphics.FromImage(bmp);
+            g.FillEllipse(new SolidBrush(line), 4, 4, 32, 32);
+            for(int i = 0; i < 4; i++)
+                if((Maze[block.X, block.Y] & (1 << i)) != 0)
+                    switch (i)
+                    {
+                        case 0:
+                            g.FillRectangle(new SolidBrush(line), 4, 0, 32, 20);
+                            break;
+                        case 1:
+                            g.FillRectangle(new SolidBrush(line), 20, 4, 20, 32);
+                            break;
+                        case 2:
+                            g.FillRectangle(new SolidBrush(line), 4, 20, 32, 20);
+                            break;
+                        case 3:
+                            g.FillRectangle(new SolidBrush(line), 0, 4, 20, 32);
+                            break;
+                    }
+            return bmp;
         }
     }
 }

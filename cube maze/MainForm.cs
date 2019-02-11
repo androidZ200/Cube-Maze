@@ -108,6 +108,7 @@ namespace cube_maze
             }
             else if(isPlaying && currentPosition == currentMaze.Finish)
             {
+                pictureBox1.Image = new Bitmap(currentMaze.GetImage(Color.Transparent, Color.Gray, Color.Green), imageSize.X, imageSize.Y);
                 MessageBox.Show("Победа!");
                 currentMaze = new Labyrinth();
                 imageSize = sizeImage();
