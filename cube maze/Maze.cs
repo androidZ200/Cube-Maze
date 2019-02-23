@@ -8,7 +8,7 @@ using System.Drawing;
 
 namespace cube_maze
 {
-    class Labyrinth
+    class Labyrinth : IMaze
     {
         public byte[,] Maze { get; private set; }
         public Point Finish { get; private set; }
@@ -16,9 +16,20 @@ namespace cube_maze
         public int Height { get; private set; }
         public int Width { get; private set; }
         private Bitmap[] blocks = new Bitmap[16];
+        private Random rnd = new Random();
 
         public Labyrinth()
         {
+            Height = rnd.Next(15, 21);
+            Width = rnd.Next(9, 14);
+            if (Width % 2 == 0) Width++;
+
+            GenerateMaze();
+        }
+        public Labyrinth(int width, int height)
+        {
+            Width = width;
+            Height = height;
             GenerateMaze();
         }
         public List<Point> GetNeighbors(Point Position)
@@ -36,57 +47,41 @@ namespace cube_maze
             Bitmap bmp = new Bitmap(Width * 160, Height * 160);
             Graphics g = Graphics.FromImage(bmp);
             g.Clear(BackGround);
-            for(int j = 0; j < Height; j++)
-                for(int i = 0; i < Width; i++)
+            for (int j = 0; j < Height; j++)
+                for (int i = 0; i < Width; i++)
                     g.DrawImage(GetBlockImage(new Point(i, j), Line), i * 160, j * 160);
             g.FillEllipse(new SolidBrush(SFPoibt), Start.X * 160 + 32, Start.Y * 160 + 32, 96, 96);
             g.FillEllipse(new SolidBrush(SFPoibt), Finish.X * 160 + 32, Finish.Y * 160 + 32, 96, 96);
             return bmp;
         }
+        public byte GetCell(int x, int y)
+        {
+            return Maze[x, y];
+        }
 
         private void GenerateMaze()
         {
-            Random rnd = new Random();
-            Width = rnd.Next(9, 13);
-            if (Width % 2 == 0) Width++;
-            Height = rnd.Next(15, 19);
             byte[,] field = new byte[Width, Height];
             int[,] group = new int[Width, Height];
-            for (int i = 0, counter = 0; i < Width; i++)
+            for (int i = 0; i < Width; i++)
                 for (int j = 0; j < Height; j++)
                 {
                     field[i, j] = 0;
-                    group[i, j] = counter;
-                    counter++;
+                    group[i, j] = i * Height + j;
                 }
-            while (true)
+            do
             {
-                int X = rnd.Next(Width);
-                int Y = rnd.Next(Height);
-                int[] neighbors = new int[4];
-                for (int i = 0; i < 4; i++)
-                    if (i == 0)
-                        try { neighbors[i] = group[X, Y - 1]; }
-                        catch { neighbors[i] = -1; }
-                    else if (i == 1)
-                        try { neighbors[i] = group[X + 1, Y]; }
-                        catch { neighbors[i] = -1; }
-                    else if (i == 2)
-                        try { neighbors[i] = group[X, Y + 1]; }
-                        catch { neighbors[i] = -1; }
-                    else if (i == 3)
-                        try { neighbors[i] = group[X - 1, Y]; }
-                        catch { neighbors[i] = -1; }
-                bool link = false;
-                for (int i = 0; i < 4; i++)
-                    if (neighbors[i] != group[X, Y] && neighbors[i] != -1)
-                        link = true;
-                while (link)
+                byte X = (byte)rnd.Next(Width);
+                byte Y = (byte)rnd.Next(Height);
+                byte neighbors = checkNeighbors(group, X, Y);
+                while (neighbors != 0)
                 {
                     int rotate = rnd.Next(4);
-                    if (neighbors[rotate] != group[X, Y] && neighbors[rotate] != -1)
+                    if ((neighbors & (1 << rotate)) != 0)
                     {
-                        int ReplacingAGroup = neighbors[rotate];
+                        int ReplacingAGroup = rotate <= 1 ?
+                            (rotate == 0 ? group[X, Y - 1] : group[X + 1, Y]) :
+                            (rotate == 2 ? group[X, Y + 1] : group[X - 1, Y]);
                         switch (rotate)
                         {
                             case 0:
@@ -106,24 +101,41 @@ namespace cube_maze
                                 field[X - 1, Y] += 2;
                                 break;
                         }
-                        for (int i = 0; i < Width; i++)
-                            for (int j = 0; j < Height; j++)
-                                if (group[i, j] == ReplacingAGroup)
-                                    group[i, j] = group[X, Y];
-                        link = false;
+                        fillGroup(group, ReplacingAGroup, group[X, Y]);
+                        break;
                     }
                 }
-                link = true;
-                for (int i = 0; i < Width; i++)
-                    for (int j = 0; j < Height; j++)
-                        if (group[i, j] != group[X, Y])
-                            link = false;
-                if (link)
-                    break;
-            }
-            Finish = new Point((Width - 1) / 2, 0);
-            Start = new Point((Width - 1) / 2, Height - 1);
+            } while (!isOneGroup(group));
+            Finish = new Point(Width / 2, 0);
+            Start = new Point(Width / 2, Height - 1);
             Maze = field;
+        }
+        private bool isOneGroup(int[,] groups)
+        {
+            int s = groups[0, 0];
+            for (int j = 0; j < groups.GetLength(1); j++)
+                for (int i = 0; i < groups.GetLength(0); i++)
+                    if (s != groups[i, j]) return false;
+            return true;
+        }
+        private byte checkNeighbors(int[,] groups, byte Ix, byte Iy)
+        {
+            byte nei = 0;
+            try { if (groups[Ix, Iy] != groups[Ix, Iy - 1]) nei += 1; }
+            catch { }
+            try { if (groups[Ix, Iy] != groups[Ix + 1, Iy]) nei += 2; }
+            catch { }
+            try { if (groups[Ix, Iy] != groups[Ix, Iy + 1]) nei += 4; }
+            catch { }
+            try { if (groups[Ix, Iy] != groups[Ix - 1, Iy]) nei += 8; }
+            catch { }
+            return nei;
+        }
+        private void fillGroup(int[,] groups, int A, int B)
+        {
+            for (int j = 0; j < groups.GetLength(1); j++)
+                for (int i = 0; i < groups.GetLength(0); i++)
+                    if (groups[i, j] == A) groups[i, j] = B;
         }
         private Bitmap GetBlockImage(Point block, Color line)
         {
@@ -131,8 +143,8 @@ namespace cube_maze
             Bitmap bmp = new Bitmap(160, 160);
             Graphics g = Graphics.FromImage(bmp);
             g.FillEllipse(new SolidBrush(line), 16, 16, 128, 128);
-            for(int i = 0; i < 4; i++)
-                if((Maze[block.X, block.Y] & (1 << i)) != 0)
+            for (int i = 0; i < 4; i++)
+                if ((Maze[block.X, block.Y] & (1 << i)) != 0)
                     switch (i)
                     {
                         case 0:
