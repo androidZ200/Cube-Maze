@@ -2,51 +2,75 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Drawing;
+using System.Diagnostics;
 
 namespace cube_maze
 {
     class GameMaze
     {
         private IMaze maze;
-        private Point player = new Point();
+        private Point3 player = new Point3();
         private bool isPlaying = false;
-        private List<Point> neighbors = new List<Point>();
+        private Stopwatch StartTime;
+        private List<Point3> neighbors = new List<Point3>();
+        public bool firstGame { get; private set; }
         public delegate void WinHandler();
         public event WinHandler Win;
+        public TimeSpan Time { get; private set; }
+        public Color line { get; set; }
+        public Color background { get; set; }
+        public Color sfPoint { get; set; }
 
+        public GameMaze(IMaze maze)
+        {
+            this.maze = maze;
+            firstGame = true;
+            line = Color.Gray;
+            background = Color.Transparent;
+            sfPoint = Color.Green;
+        }
         public GameMaze()
         {
-            maze = new Labyrinth();
+            firstGame = true;
+            line = Color.Gray;
+            background = Color.Transparent;
+            sfPoint = Color.Green;
         }
 
         public void Click(Point coordinate)
         {
-            if (!isPlaying && coordinate == maze.Start)
+            if (!isPlaying && new Point3(coordinate) == maze.Start)
             {
                 isPlaying = true;
                 UpdateNeighbors(maze.Start);
                 player = maze.Start;
+                if(firstGame)
+                {
+                    firstGame = false;
+                    StartTime = Stopwatch.StartNew();
+                }
             }
             else if (isPlaying && player == maze.Finish)
             {
+                Time = StartTime.Elapsed;
                 Win();
                 isPlaying = false;
-                maze = new Labyrinth();
+                firstGame = true;
             }
         }
         public void Move(Point coordinate)
         {
             if (isPlaying)
             {
-                if (coordinate != player)
+                if (coordinate != new Point(player.X, player.Y))
                 {
                     for (int i = 0; i < neighbors.Count; i++)
-                        if (neighbors[i] == coordinate)
+                        if  (new Point(neighbors[i].X, neighbors[i].Y) == coordinate)
                         {
-                            UpdateNeighbors(coordinate);
-                            player = coordinate;
+                            player = neighbors[i];
+                            UpdateNeighbors(neighbors[i]);
                             return;
                         }
                     isPlaying = false;
@@ -60,16 +84,16 @@ namespace cube_maze
             Graphics g = Graphics.FromImage(bmp);
             double Step = imageSize.X * 1.0 / maze.Width;
             if (!isPlaying)
-                g.FillRectangle(new SolidBrush(Color.Green), (float)(maze.Start.X * Step), (float)(maze.Start.Y * Step), (float)Step - 1, (float)Step - 1);
+                g.FillRectangle(new SolidBrush(sfPoint), (float)(maze.Start.X * Step), (float)(maze.Start.Y * Step), (float)Step - 1, (float)Step - 1);
             else
             {
-                Brush b = new SolidBrush(Color.Gray);
+                Brush b = new SolidBrush(line);
                 if (player == maze.Finish)
-                    g.FillRectangle(new SolidBrush(Color.Green), (float)(maze.Finish.X * Step), (float)(maze.Finish.Y * Step), (float)Step - 1, (float)Step - 1);
+                    g.FillRectangle(new SolidBrush(sfPoint), (float)(maze.Finish.X * Step), (float)(maze.Finish.Y * Step), (float)Step - 1, (float)Step - 1);
                 else g.FillRectangle(b, (float)(player.X * Step), (float)(player.Y * Step), (float)Step - 1, (float)Step - 1);
                 for (int i = 0; i < neighbors.Count; i++)
                     if (neighbors[i] == maze.Finish)
-                        g.FillRectangle(new SolidBrush(Color.Green), (float)(maze.Finish.X * Step), (float)(maze.Finish.Y * Step), (float)Step - 1, (float)Step - 1);
+                        g.FillRectangle(new SolidBrush(sfPoint), (float)(maze.Finish.X * Step), (float)(maze.Finish.Y * Step), (float)Step - 1, (float)Step - 1);
                     else g.FillRectangle(b, (float)(neighbors[i].X * Step), (float)(neighbors[i].Y * Step), (float)Step - 1, (float)Step - 1);
             }
             return bmp;
@@ -77,7 +101,7 @@ namespace cube_maze
         public Bitmap GetFullImage(int width, int height)
         {
             Point size = sizeImage(width, height);
-            return new Bitmap(maze.GetImage(Color.Transparent, Color.Gray, Color.Green), size.X, size.Y);
+            return new Bitmap(maze.GetImage(background, line, sfPoint), size.X, size.Y);
         }
         public Point GetPosition(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
         {
@@ -99,15 +123,26 @@ namespace cube_maze
                 }
             return position;
         }
-
-        private void UpdateNeighbors(Point coordinate)
+        public void NewGenerate(IMaze maze)
         {
-            byte cell = maze.GetCell(coordinate.X, coordinate.Y);
+            isPlaying = false;
+            firstGame = true;
+            this.maze = maze;
+        }
+
+        private void UpdateNeighbors(Point3 coordinate)
+        {
+            byte cell = maze.GetCell(coordinate.X, coordinate.Y, coordinate.Z);
             neighbors.Clear();
-            if ((cell & 1) != 0) neighbors.Add(new Point(coordinate.X, coordinate.Y - 1));
-            if ((cell & 2) != 0) neighbors.Add(new Point(coordinate.X + 1, coordinate.Y));
-            if ((cell & 4) != 0) neighbors.Add(new Point(coordinate.X, coordinate.Y + 1));
-            if ((cell & 8) != 0) neighbors.Add(new Point(coordinate.X - 1, coordinate.Y));
+            if ((cell & (1 << 0)) != 0) neighbors.Add(new Point3(coordinate.X, coordinate.Y - 1, coordinate.Z));
+            if ((cell & (1 << 1)) != 0) neighbors.Add(new Point3(coordinate.X + 1, coordinate.Y, coordinate.Z));
+            if ((cell & (1 << 2)) != 0) neighbors.Add(new Point3(coordinate.X, coordinate.Y + 1, coordinate.Z));
+            if ((cell & (1 << 3)) != 0) neighbors.Add(new Point3(coordinate.X - 1, coordinate.Y, coordinate.Z));
+
+            if ((cell & (1 << 4)) != 0) neighbors.Add(new Point3(coordinate.X, coordinate.Y - 1, coordinate.Z ^ 1));
+            if ((cell & (1 << 5)) != 0) neighbors.Add(new Point3(coordinate.X + 1, coordinate.Y, coordinate.Z ^ 1));
+            if ((cell & (1 << 6)) != 0) neighbors.Add(new Point3(coordinate.X, coordinate.Y + 1, coordinate.Z ^ 1));
+            if ((cell & (1 << 7)) != 0) neighbors.Add(new Point3(coordinate.X - 1, coordinate.Y, coordinate.Z ^ 1));
         }
         private Point sizeImage(int currentWidth, int currentHeight)
         {

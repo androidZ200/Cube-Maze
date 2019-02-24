@@ -9,11 +9,11 @@ namespace cube_maze
 {
     interface IMaze
     {
-        byte GetCell(int x, int y);
+        byte GetCell(int x, int y, int z);
         Bitmap GetImage(Color BackGround, Color Line, Color SFPoibt);
         int Height { get; }
         int Width { get; }
-        Point Finish { get; }
-        Point Start { get; }
+        Point3 Finish { get; }
+        Point3 Start { get; }
     }
 }

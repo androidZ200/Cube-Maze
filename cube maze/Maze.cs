@@ -11,8 +11,8 @@ namespace cube_maze
     class Labyrinth : IMaze
     {
         public byte[,] Maze { get; private set; }
-        public Point Finish { get; private set; }
-        public Point Start { get; private set; }
+        public Point3 Finish { get; private set; }
+        public Point3 Start { get; private set; }
         public int Height { get; private set; }
         public int Width { get; private set; }
         private Bitmap[] blocks = new Bitmap[16];
@@ -54,7 +54,7 @@ namespace cube_maze
             g.FillEllipse(new SolidBrush(SFPoibt), Finish.X * 160 + 32, Finish.Y * 160 + 32, 96, 96);
             return bmp;
         }
-        public byte GetCell(int x, int y)
+        public byte GetCell(int x, int y, int z)
         {
             return Maze[x, y];
         }
@@ -106,8 +106,8 @@ namespace cube_maze
                     }
                 }
             } while (!isOneGroup(group));
-            Finish = new Point(Width / 2, 0);
-            Start = new Point(Width / 2, Height - 1);
+            Finish = new Point3(Width / 2, 0, 0);
+            Start = new Point3(Width / 2, Height - 1, 0);
             Maze = field;
         }
         private bool isOneGroup(int[,] groups)
