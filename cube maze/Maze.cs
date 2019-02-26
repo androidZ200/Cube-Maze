@@ -8,17 +8,17 @@ using System.Drawing;
 
 namespace cube_maze
 {
-    class Labyrinth : IMaze
+    class Maze
     {
-        public byte[,] Maze { get; private set; }
-        public Point3 Finish { get; private set; }
-        public Point3 Start { get; private set; }
+        public byte[,] maze { get; private set; }
+        public Point Finish { get; private set; }
+        public Point Start { get; private set; }
         public int Height { get; private set; }
         public int Width { get; private set; }
         private Bitmap[] blocks = new Bitmap[16];
         private Random rnd = new Random();
 
-        public Labyrinth()
+        public Maze()
         {
             Height = rnd.Next(15, 21);
             Width = rnd.Next(9, 14);
@@ -26,7 +26,7 @@ namespace cube_maze
 
             GenerateMaze();
         }
-        public Labyrinth(int width, int height)
+        public Maze(int width, int height)
         {
             Width = width;
             Height = height;
@@ -35,7 +35,7 @@ namespace cube_maze
         public List<Point> GetNeighbors(Point Position)
         {
             List<Point> neighbors = new List<Point>();
-            int t = Maze[Position.X, Position.Y];
+            int t = maze[Position.X, Position.Y];
             if ((t & 8) != 0) neighbors.Add(new Point(Position.X - 1, Position.Y));
             if ((t & 4) != 0) neighbors.Add(new Point(Position.X, Position.Y + 1));
             if ((t & 2) != 0) neighbors.Add(new Point(Position.X + 1, Position.Y));
@@ -54,9 +54,9 @@ namespace cube_maze
             g.FillEllipse(new SolidBrush(SFPoibt), Finish.X * 160 + 32, Finish.Y * 160 + 32, 96, 96);
             return bmp;
         }
-        public byte GetCell(int x, int y, int z)
+        public byte GetCell(int x, int y)
         {
-            return Maze[x, y];
+            return maze[x, y];
         }
 
         private void GenerateMaze()
@@ -106,9 +106,9 @@ namespace cube_maze
                     }
                 }
             } while (!isOneGroup(group));
-            Finish = new Point3(Width / 2, 0, 0);
-            Start = new Point3(Width / 2, Height - 1, 0);
-            Maze = field;
+            Finish = new Point(Width / 2, 0);
+            Start = new Point(Width / 2, Height - 1);
+            maze = field;
         }
         private bool isOneGroup(int[,] groups)
         {
@@ -139,12 +139,12 @@ namespace cube_maze
         }
         private Bitmap GetBlockImage(Point block, Color line)
         {
-            if (blocks[Maze[block.X, block.Y]] != null) return blocks[Maze[block.X, block.Y]];
+            if (blocks[maze[block.X, block.Y]] != null) return blocks[maze[block.X, block.Y]];
             Bitmap bmp = new Bitmap(160, 160);
             Graphics g = Graphics.FromImage(bmp);
             g.FillEllipse(new SolidBrush(line), 16, 16, 128, 128);
             for (int i = 0; i < 4; i++)
-                if ((Maze[block.X, block.Y] & (1 << i)) != 0)
+                if ((maze[block.X, block.Y] & (1 << i)) != 0)
                     switch (i)
                     {
                         case 0:
@@ -160,7 +160,7 @@ namespace cube_maze
                             g.FillRectangle(new SolidBrush(line), 0, 16, 80, 128);
                             break;
                     }
-            blocks[Maze[block.X, block.Y]] = bmp;
+            blocks[maze[block.X, block.Y]] = bmp;
             return bmp;
         }
     }
