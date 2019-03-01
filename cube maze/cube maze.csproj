@@ -55,6 +55,7 @@
     </Compile>
     <Compile Include="Maze.cs" />
     <Compile Include="Maze2.cs" />
+    <Compile Include="Maze3.cs" />
     <Compile Include="Point3.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

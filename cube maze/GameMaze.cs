@@ -166,7 +166,7 @@ namespace cube_maze
         public override void Click(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
         {
             Point coordinate = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse, maze.Height, maze.Width);
-            if (!isPlaying && new Point3(coordinate.X, coordinate.Y, 0) == maze.Start)
+            if (!isPlaying && new Point3(coordinate, 0) == maze.Start)
             {
                 UpdateNeighbors(maze.Start);
                 player = maze.Start;
@@ -180,10 +180,10 @@ namespace cube_maze
             if (isPlaying)
             {
                 Point coordinate = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse, maze.Height, maze.Width);
-                if (coordinate != new Point(player.X, player.Y))
+                if (coordinate != player.toPoint())
                 {
                     for (int i = 0; i < neighbors.Count; i++)
-                        if (new Point(neighbors[i].X, neighbors[i].Y) == coordinate)
+                        if (neighbors[i].toPoint() == coordinate)
                         {
                             player = neighbors[i];
                             UpdateNeighbors(neighbors[i]);
@@ -201,23 +201,16 @@ namespace cube_maze
         public override Bitmap GetImage(int width, int height)
         {
             Point imageSize = sizeImage(width, height, maze.Width, maze.Height);
-            Bitmap bmp = new Bitmap(imageSize.X, imageSize.Y);
-            Graphics g = Graphics.FromImage(bmp);
-            double Step = imageSize.X * 1.0 / maze.Width;
-            if (!isPlaying)
-                g.FillRectangle(new SolidBrush(sfPoint), (float)(maze.Start.X * Step), (float)(maze.Start.Y * Step), (float)Step - 1, (float)Step - 1);
-            else
+            List<Point> neighbors = new List<Point>();
+            Point Finish = new Point(-1, 0);
+            for (int i = 0; i < this.neighbors.Count; i++)
             {
-                Brush b = new SolidBrush(line);
-                if (player == maze.Finish)
-                    g.FillRectangle(new SolidBrush(sfPoint), (float)(maze.Finish.X * Step), (float)(maze.Finish.Y * Step), (float)Step - 1, (float)Step - 1);
-                else g.FillRectangle(b, (float)(player.X * Step), (float)(player.Y * Step), (float)Step - 1, (float)Step - 1);
-                for (int i = 0; i < neighbors.Count; i++)
-                    if (neighbors[i] == maze.Finish)
-                        g.FillRectangle(new SolidBrush(sfPoint), (float)(maze.Finish.X * Step), (float)(maze.Finish.Y * Step), (float)Step - 1, (float)Step - 1);
-                    else g.FillRectangle(b, (float)(neighbors[i].X * Step), (float)(neighbors[i].Y * Step), (float)Step - 1, (float)Step - 1);
+                if (this.neighbors[i] == maze.Finish) Finish = maze.Finish.toPoint();
+                neighbors.Add(this.neighbors[i].toPoint());
             }
-            return bmp;
+            if (player == maze.Finish) Finish = maze.Finish.toPoint();
+            return DrawField(sizeImage(width, height, maze.Width, maze.Height),
+                maze.Width, neighbors, player.toPoint(), Finish, maze.Start.toPoint());
         }
         public override void NewGenerate()
         {
@@ -257,6 +250,115 @@ namespace cube_maze
                             neighbors.Add(new Point3(cell.X - 1, cell.Y, cell.Z ^ 1));
                             break;
                     }
+        }
+    }
+    class GameMazeDuplex : Game
+    {
+        private Point3 player = new Point3();
+        private Maze3 maze;
+        private List<Point> neighbors = new List<Point>();
+
+        public GameMazeDuplex()
+        {
+            maze = new Maze3();
+        }
+
+        public override void Click(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
+        {
+            Point coordinate = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse, maze.Height, maze.Width);
+            if (!isPlaying && coordinate == maze.Start.toPoint())
+            {
+                UpdateNeighbors(maze.Start);
+                player = maze.Start;
+                ClickStart();
+            }
+            else if (isPlaying && player == maze.Finish)
+                ClickFinish();
+            else if (isPlaying && !isNormalCell(maze.GetCell(player)))
+            {
+                player.Z = player.Z ^ 1;
+                UpdateNeighbors(player);
+            }
+        }
+        public override void Move(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
+        {
+            if (isPlaying)
+            {
+                Point coordinate = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse, maze.Height, maze.Width);
+                if (coordinate != player.toPoint())
+                {
+                    for (int i = 0; i < neighbors.Count; i++)
+                        if (neighbors[i] == coordinate)
+                        {
+                            player = new Point3(neighbors[i], player.Z);
+                            UpdateNeighbors(new Point3(neighbors[i], player.Z));
+                            return;
+                        }
+                    isPlaying = false;
+                }
+            }
+        }
+        public override Bitmap GetFullImage(int width, int height)
+        {
+            Point size = sizeImage(width, height, maze.Width, maze.Height);
+            return new Bitmap(maze.GetImage(Color.Transparent, line, sfPoint), size.X, size.Y);
+        }
+        public override Bitmap GetImage(int width, int height)
+        {
+            Point size = sizeImage(width, height, maze.Width, maze.Height);
+            Bitmap bmp = new Bitmap(size.X, size.Y);
+            Graphics g = Graphics.FromImage(bmp);
+            float Step = (float)(size.X * 1.0 / maze.Width);
+            if (!isPlaying)
+                g.FillRectangle(new SolidBrush(sfPoint), maze.Start.X * Step, maze.Start.Y * Step, Step - 1, Step - 1);
+            else
+            {
+                if (player == maze.Finish)
+                    g.DrawImage(new Bitmap(GetBlock(sfPoint, isNormalCell(maze.GetCell(maze.Finish))), (int)Step - 1, (int)Step - 1),
+                        maze.Finish.X * Step, maze.Finish.Y * Step);
+                else g.DrawImage(new Bitmap(GetBlock(line, isNormalCell(maze.GetCell(player))), (int)Step - 1, (int)Step - 1),
+                    player.X * Step, player.Y * Step);
+                for (int i = 0; i < neighbors.Count; i++)
+                    if (new Point3(neighbors[i], player.Z) == maze.Finish)
+                        g.DrawImage(new Bitmap(GetBlock(sfPoint, isNormalCell(maze.GetCell(maze.Finish))), (int)Step - 1, (int)Step - 1),
+                            maze.Finish.X * Step, maze.Finish.Y * Step);
+                    else g.DrawImage(new Bitmap(GetBlock(line, isNormalCell(maze.GetCell(new Point3(neighbors[i], player.Z)))), (int)Step - 1, (int)Step - 1),
+                        neighbors[i].X * Step, neighbors[i].Y * Step);
+            }
+            return bmp;
+        }
+        public override void NewGenerate()
+        {
+            maze = new Maze3();
+        }
+
+        private void UpdateNeighbors(Point3 cell)
+        {
+            neighbors.Clear();
+            byte t = maze.field[cell.X, cell.Y, cell.Z];
+            if ((t & 8) != 0) neighbors.Add(new Point(cell.X - 1, cell.Y));
+            if ((t & 4) != 0) neighbors.Add(new Point(cell.X, cell.Y + 1));
+            if ((t & 2) != 0) neighbors.Add(new Point(cell.X + 1, cell.Y));
+            if ((t & 1) != 0) neighbors.Add(new Point(cell.X, cell.Y - 1));
+        }
+        private Bitmap GetBlock(Color line, bool Normal)
+        {
+            Bitmap bmp = new Bitmap(100, 100);
+            Graphics g = Graphics.FromImage(bmp);
+            if (Normal)
+                g.FillRectangle(new SolidBrush(line), 0, 0, 100, 100);
+            else
+            {
+                g.FillRectangle(new SolidBrush(line), 0, 0, 100, 20);
+                g.FillRectangle(new SolidBrush(line), 0, 80, 100, 20);
+                g.FillRectangle(new SolidBrush(line), 0, 0, 20, 100);
+                g.FillRectangle(new SolidBrush(line), 80, 0, 20, 100);
+            }
+            return bmp;
+        }
+        private bool isNormalCell(byte cell)
+        {
+            return (cell & 1 << 4) == 0;
         }
     }
 }

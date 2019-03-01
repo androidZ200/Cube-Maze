@@ -37,6 +37,7 @@ namespace cube_maze
             Text = "Идёт загрузка... Пожалуйста подождите";
             if (radioButton1.Checked) GAME = new GameMazeNormal();
             else if (radioButton2.Checked) GAME = new GameMazeCyclical();
+            else if (radioButton3.Checked) GAME = new GameMazeDuplex();
             GAME.Win += GAME_Win;
             GAME.sfPoint = colors[rand.Next(colors.Length)];
             Text = "";
@@ -55,7 +56,8 @@ namespace cube_maze
         }
         private void pictureBox1_SizeChanged(object sender, EventArgs e)
         {
-            pictureBox1.Image = GAME.GetImage(pictureBox1.Width, pictureBox1.Height);
+            if (pictureBox1.Width != 0)
+                pictureBox1.Image = GAME.GetImage(pictureBox1.Width, pictureBox1.Height);
         }
 
         private void radioButton2_CheckedChanged(object sender, EventArgs e)

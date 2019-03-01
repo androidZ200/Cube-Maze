@@ -42,5 +42,10 @@ namespace cube_maze
         {
             return !(left == right);
         }
+
+        public Point toPoint()
+        {
+            return new Point(X, Y);
+        }
     }
 }
