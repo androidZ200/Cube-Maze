@@ -39,11 +39,10 @@ namespace cube_maze
         {
             return GetCell(p.X, p.Y, p.Z);
         }
-        public Bitmap GetImage(Color BackGround, Color Line, Color SFPoibt)
+        public Bitmap GetImage(Color Line, Color SFPoibt)
         {
             Bitmap bmp = new Bitmap(Width * 160, Height * 160);
             Graphics g = Graphics.FromImage(bmp);
-            g.Clear(BackGround);
             for (int j = 0; j < Height; j++)
                 for (int i = 0; i < Width; i++)
                     g.DrawImage(GetBlockImage(field[i, j, 0], field[i, j, 1], Line), i * 160, j * 160);

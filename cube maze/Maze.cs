@@ -42,11 +42,10 @@ namespace cube_maze
             if ((t & 1) != 0) neighbors.Add(new Point(Position.X, Position.Y - 1));
             return neighbors;
         }
-        public Bitmap GetImage(Color BackGround, Color Line, Color SFPoibt)
+        public Bitmap GetImage(Color Line, Color SFPoibt)
         {
             Bitmap bmp = new Bitmap(Width * 160, Height * 160);
             Graphics g = Graphics.FromImage(bmp);
-            g.Clear(BackGround);
             for (int j = 0; j < Height; j++)
                 for (int i = 0; i < Width; i++)
                     g.DrawImage(GetBlockImage(new Point(i, j), Line), i * 160, j * 160);

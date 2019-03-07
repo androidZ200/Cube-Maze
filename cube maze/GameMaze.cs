@@ -23,6 +23,7 @@ namespace cube_maze
         public abstract Bitmap GetImage(int width, int height);
         public abstract Bitmap GetFullImage(int width, int height);
         public abstract void NewGenerate();
+        public abstract byte[] GetSave();
 
         protected Point GetPosition(int pictureBoxWidth, int pictureBoxHeight, Point Mouse, int mazeHeight, int mazeWidth)
         {
@@ -135,7 +136,7 @@ namespace cube_maze
         public override Bitmap GetFullImage(int width, int height)
         {
             Point size = sizeImage(width, height, maze.Width, maze.Height);
-            return new Bitmap(maze.GetImage(Color.Transparent, line, sfPoint), size.X, size.Y);
+            return new Bitmap(maze.GetImage(line, sfPoint), size.X, size.Y);
         }
         public override Bitmap GetImage(int width, int height)
         {
@@ -145,6 +146,17 @@ namespace cube_maze
         public override void NewGenerate()
         {
             maze = new Maze();
+        }
+        public override byte[] GetSave()
+        {
+            byte[] save = new byte[maze.Width * maze.Height + 1];
+            int counter = 0;
+            save[counter++] = (byte)maze.Width;
+            save[0] |= (0 << 6);
+            for (int j = 0; j < maze.Height; j++)
+                for (int i = 0; i < maze.Width; i++)
+                    save[counter++] = maze.maze[i, j];
+            return save;
         }
 
         private void UpdateNeighbors(Point cell)
@@ -196,7 +208,7 @@ namespace cube_maze
         public override Bitmap GetFullImage(int width, int height)
         {
             Point size = sizeImage(width, height, maze.Width, maze.Height);
-            return new Bitmap(maze.GetImage(Color.Transparent, line, sfPoint), size.X, size.Y);
+            return new Bitmap(maze.GetImage(line, sfPoint), size.X, size.Y);
         }
         public override Bitmap GetImage(int width, int height)
         {
@@ -215,6 +227,18 @@ namespace cube_maze
         public override void NewGenerate()
         {
             maze = new Maze2();
+        }
+        public override byte[] GetSave()
+        {
+            byte[] save = new byte[maze.Width * maze.Height * 2 + 1];
+            int counter = 0;
+            save[counter++] = (byte)maze.Width;
+            save[0] |= (1 << 6); //метка лаюиринта
+            for(int z = 0; z < 2; z++)
+            for (int j = 0; j < maze.Height; j++)
+                for (int i = 0; i < maze.Width; i++)
+                    save[counter++] = maze.field[i, j, z];
+            return save;
         }
 
         private void UpdateNeighbors(Point3 cell)
@@ -301,7 +325,7 @@ namespace cube_maze
         public override Bitmap GetFullImage(int width, int height)
         {
             Point size = sizeImage(width, height, maze.Width, maze.Height);
-            return new Bitmap(maze.GetImage(Color.Transparent, line, sfPoint), size.X, size.Y);
+            return new Bitmap(maze.GetImage(line, sfPoint), size.X, size.Y);
         }
         public override Bitmap GetImage(int width, int height)
         {
@@ -330,6 +354,18 @@ namespace cube_maze
         public override void NewGenerate()
         {
             maze = new Maze3();
+        }
+        public override byte[] GetSave()
+        {
+            byte[] save = new byte[maze.Width * maze.Height * 2 + 1];
+            int counter = 0;
+            save[counter++] = (byte)maze.Width;
+            save[0] |= (2 << 6); //метка лаюиринта
+            for (int z = 0; z < 2; z++)
+                for (int j = 0; j < maze.Height; j++)
+                    for (int i = 0; i < maze.Width; i++)
+                        save[counter++] = maze.field[i, j, z];
+            return save;
         }
 
         private void UpdateNeighbors(Point3 cell)
