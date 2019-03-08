@@ -33,6 +33,12 @@ namespace cube_maze
             Y = other.Y;
             this.Z = Z;
         }
+        public Point3(Point3 other)
+        {
+            X = other.X;
+            Y = other.Y;
+            Z = other.Z;
+        }
 
         public static bool operator ==(Point3 left, Point3 right)
         {

@@ -293,7 +293,7 @@ namespace cube_maze
             if (!isPlaying && coordinate == maze.Start.toPoint())
             {
                 UpdateNeighbors(maze.Start);
-                player = maze.Start;
+                player = new Point3(maze.Start);
                 ClickStart();
             }
             else if (isPlaying && player == maze.Finish)
