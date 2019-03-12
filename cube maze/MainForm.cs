@@ -13,104 +13,74 @@ namespace cube_maze
 {
     public partial class MainForm : Form
     {
-        Game GAME;
         Color[] LightColor = { Color.Green, Color.Red, Color.Blue, Color.Orange, Color.Purple };
-        bool LightTheme = true;
+        Color Background = Color.FromArgb(0xed, 0xee, 0xf0);
         Random rand = new Random();
 
         public MainForm()
         {
             InitializeComponent();
-            NewGenerate();
-            SetTheme(LightTheme);
-            pictureBox1.Image = GAME.GetImage(pictureBox1.Width, pictureBox1.Height);
+
+            button1.FlatAppearance.BorderSize = 0;
+            button2.FlatAppearance.BorderSize = 0;
+            button3.FlatAppearance.BorderSize = 0;
+            button1.FlatStyle = FlatStyle.Flat;
+            button2.FlatStyle = FlatStyle.Flat;
+            button3.FlatStyle = FlatStyle.Flat;
         }
 
-        private void GAME_Win()
-        {
-            pictureBox1.Image = GAME.GetFullImage(pictureBox1.Width, pictureBox1.Height);
-            MessageBox.Show("Победа!\nВремя прохождения: " + GAME.Time);
-            Text = "Идёт загрузка... Пожалуйста подождите";
-            GAME.NewGenerate();
-            pictureBox1.Image = GAME.GetImage(pictureBox1.Width, pictureBox1.Height);
-            Text = "";
-        }
-        private void NewGenerate()
-        {
-            Text = "Идёт загрузка... Пожалуйста подождите";
-            if (radioButton1.Checked) GAME = new GameMazeNormal();
-            else if (radioButton2.Checked) GAME = new GameMazeCyclical();
-            else if (radioButton3.Checked) GAME = new GameMazeDuplex();
-            GAME.Win += GAME_Win;
-            GAME.sfPoint = LightColor[rand.Next(LightColor.Length)];
-            Text = "";
-            using (FileStream input = new FileStream("save.txt", FileMode.Create))
-            {
-                var t = GAME.GetSave();
-                input.Write(t, 0, t.Length);
-            }
-
-        }
         private void SetTheme(bool Light)
         {
             Action<Color, Color> action = (Color Background, Color Text) =>
             {
-                radioButton1.ForeColor = Text;
-                radioButton2.ForeColor = Text;
-                radioButton3.ForeColor = Text;
 
-                radioButton1.BackColor = Background;
-                radioButton2.BackColor = Background;
-                radioButton3.BackColor = Background;
+                button1.ForeColor = Text;
+                button2.ForeColor = Text;
+                button3.ForeColor = Text;
+                checkBox1.ForeColor = Text;
 
-                radioButton1.FlatAppearance.BorderSize = 0;
-                radioButton2.FlatAppearance.BorderSize = 0;
-                radioButton3.FlatAppearance.BorderSize = 0;
-
-                radioButton1.FlatStyle = FlatStyle.Flat;
-                radioButton2.FlatStyle = FlatStyle.Flat;
-                radioButton3.FlatStyle = FlatStyle.Flat;
+                button1.BackColor = Background;
+                button2.BackColor = Background;
+                button3.BackColor = Background;
             };
             if (Light)
             {
-                this.BackColor = Color.FromArgb(0xed, 0xee, 0xf0);
-                pictureBox1.BackColor = Color.FromArgb(0xed, 0xee, 0xf0);
+                BackColor = Color.FromArgb(0xed, 0xee, 0xf0);
+                Background = Color.FromArgb(0xed, 0xee, 0xf0);
                 action(Color.FromArgb(0xdd, 0xde, 0xe0), Color.Black);
             }
             else
             {
-                this.BackColor = Color.FromArgb(0x22, 0x22, 0x26);
-                pictureBox1.BackColor = Color.FromArgb(0x22, 0x22, 0x26);
+                BackColor = Color.FromArgb(0x22, 0x22, 0x26);
+                Background = Color.FromArgb(0x22, 0x22, 0x26);
                 action(Color.FromArgb(0x33, 0x33, 0x36), Color.White);
             }
         }
 
-        private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
+        private void button1_Click(object sender, EventArgs e)
         {
-            GAME.Move(pictureBox1.Width, pictureBox1.Height, e.Location);
-            pictureBox1.Image = GAME.GetImage(pictureBox1.Width, pictureBox1.Height);
-            GC.Collect();
+            Game t = new GameMazeNormal();
+            t.sfPoint = LightColor[rand.Next(LightColor.Length)];
+            GameForm form = new GameForm(t, Background);
+            form.Show();
         }
-        private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
+        private void button2_Click(object sender, EventArgs e)
         {
-            GAME.Click(pictureBox1.Width, pictureBox1.Height, e.Location);
-            pictureBox1.Image = GAME.GetImage(pictureBox1.Width, pictureBox1.Height);
+            Game t = new GameMazeCyclical();
+            t.sfPoint = LightColor[rand.Next(LightColor.Length)];
+            GameForm form = new GameForm(t, Background);
+            form.Show();
         }
-        private void pictureBox1_SizeChanged(object sender, EventArgs e)
+        private void button3_Click(object sender, EventArgs e)
         {
-            if (pictureBox1.Width != 0)
-                pictureBox1.Image = GAME.GetImage(pictureBox1.Width, pictureBox1.Height);
-        }
-
-        private void radioButton2_CheckedChanged(object sender, EventArgs e)
-        {
-            NewGenerate();
-            pictureBox1.Image = GAME.GetImage(pictureBox1.Width, pictureBox1.Height);
+            Game t = new GameMazeDuplex();
+            t.sfPoint = LightColor[rand.Next(LightColor.Length)];
+            GameForm form = new GameForm(t, Background);
+            form.Show();
         }
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-            LightTheme = !LightTheme;
-            SetTheme(LightTheme);
+            SetTheme(!checkBox1.Checked);
         }
     }
 }

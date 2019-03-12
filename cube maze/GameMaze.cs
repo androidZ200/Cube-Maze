@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace cube_maze
 {
-    abstract class Game
+    public abstract class Game
     {
         protected Stopwatch StartTime;
         protected bool isPlaying = false;

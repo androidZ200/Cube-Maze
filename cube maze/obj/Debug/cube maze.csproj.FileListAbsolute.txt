@@ -8,3 +8,4 @@ C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube maze.exe
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube maze.pdb
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube_maze.MainForm.resources
+C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube_maze.GameForm.resources
