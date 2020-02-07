@@ -10,6 +10,7 @@ namespace cube_maze
 {
     public abstract class Game
     {
+        protected Maze maze;
         protected Stopwatch StartTime;
         protected bool isPlaying = false;
         protected bool firstGame = true;
@@ -18,26 +19,40 @@ namespace cube_maze
         public Color line { get; set; } = Color.Gray;
         public Color sfPoint { get; set; } = Color.Green;
 
-        public abstract void Click(int pictureBoxWidth, int pictureBoxHeight, Point Mouse);
-        public abstract void Move(int pictureBoxWidth, int pictureBoxHeight, Point Mouse);
+        public void Click(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
+        {
+            Point position = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse);
+            Click(position);
+        }
+        public void Move(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
+        {
+            Point position = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse);
+            Move(position);
+        }
+        protected abstract void Click(Point coord);
+        protected abstract void Move(Point coord);
         public abstract Bitmap GetImage(int width, int height);
-        public abstract Bitmap GetFullImage(int width, int height);
+        public Bitmap GetFullImage(int width, int height)
+        {
+            Size size = sizeImage(width, height);
+            return new Bitmap(maze.GetImage(line, sfPoint), size);
+        }
         public abstract void NewGenerate();
         public abstract byte[] GetSave();
 
-        protected Point GetPosition(int pictureBoxWidth, int pictureBoxHeight, Point Mouse, int mazeHeight, int mazeWidth)
+        private Point GetPosition(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
         {
-            Point size = sizeImage(pictureBoxWidth, pictureBoxHeight, mazeWidth, mazeHeight);
-            Point padding = new Point((pictureBoxWidth - size.X) / 2, (pictureBoxHeight - size.Y) / 2);
-            double Step = size.Y * 1.0 / mazeHeight;
+            Size size = sizeImage(pictureBoxWidth, pictureBoxHeight);
+            Point padding = new Point((pictureBoxWidth - size.Width) / 2, (pictureBoxHeight - size.Height) / 2);
+            double Step = size.Height * 1.0 / maze.Height;
             Point position = new Point(-1, -1);
-            for (int i = 1; i <= mazeWidth; i++)
+            for (int i = 1; i <= maze.Width; i++)
                 if ((i - 1) * Step + padding.X < Mouse.X && Mouse.X <= i * Step + padding.X)
                 {
                     position.X = i - 1;
                     break;
                 }
-            for (int i = 1; i <= mazeHeight; i++)
+            for (int i = 1; i <= maze.Height; i++)
                 if ((i - 1) * Step + padding.Y < Mouse.Y && Mouse.Y <= i * Step + padding.Y)
                 {
                     position.Y = i - 1;
@@ -45,13 +60,13 @@ namespace cube_maze
                 }
             return position;
         }
-        protected Point sizeImage(int currentWidth, int currentHeight, int mazeWidth, int mazeHeight)
+        protected Size sizeImage(int currentWidth, int currentHeight)
         {
-            double XYmaze = mazeWidth * 1.0 / mazeHeight;
+            double XYmaze = maze.Width * 1.0 / maze.Height;
             double XYpicture = currentWidth * 1.0 / currentHeight;
             if (XYpicture > XYmaze)
-                return new Point((int)(currentHeight * XYmaze), currentHeight);
-            return new Point(currentWidth, (int)(currentWidth / XYmaze));
+                return new Size((int)(currentHeight * XYmaze), currentHeight);
+            return new Size(currentWidth, (int)(currentWidth / XYmaze));
         }
         protected void ClickStart()
         {
@@ -69,11 +84,11 @@ namespace cube_maze
             firstGame = true;
             Win();
         }
-        protected Bitmap DrawField(Point imageSize, int WidthMaze, List<Point> neighbors, Point player, Point Finish, Point Start)
+        protected Bitmap DrawField(Size imageSize, List<Point> neighbors, Point player, Point Finish, Point Start)
         {
-            Bitmap bmp = new Bitmap(imageSize.X, imageSize.Y);
+            Bitmap bmp = new Bitmap(imageSize.Width, imageSize.Height);
             Graphics g = Graphics.FromImage(bmp);
-            double Step = imageSize.X * 1.0 / WidthMaze;
+            double Step = imageSize.Width * 1.0 / maze.Width;
             if (!isPlaying)
                 g.FillRectangle(new SolidBrush(sfPoint), (float)(Start.X * Step), (float)(Start.Y * Step), (float)Step - 1, (float)Step - 1);
             else
@@ -94,18 +109,17 @@ namespace cube_maze
     class GameMazeNormal : Game
     {
         private Point player = new Point();
-        private Maze maze;
+        private MazeNormal maze;
         private List<Point> neighbors = new List<Point>();
 
         public GameMazeNormal()
         {
-            maze = new Maze();
+            base.maze = maze = new MazeNormal();
         }
 
-        public override void Click(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
+        protected override void Click(Point coord)
         {
-            Point coordinate = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse, maze.Height, maze.Width);
-            if (!isPlaying && coordinate == maze.Start)
+            if (!isPlaying && coord == maze.Start)
             {
                 UpdateNeighbors(maze.Start);
                 player = maze.Start;
@@ -115,15 +129,14 @@ namespace cube_maze
             else if (isPlaying && player == maze.Finish)
                 ClickFinish();
         }
-        public override void Move(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
+        protected override void Move(Point coord)
         {
             if (isPlaying)
             {
-                Point coordinate = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse, maze.Height, maze.Width);
-                if (coordinate != player)
+                if (coord != player)
                 {
                     for (int i = 0; i < neighbors.Count; i++)
-                        if (neighbors[i] == coordinate)
+                        if (neighbors[i] == coord)
                         {
                             player = neighbors[i];
                             UpdateNeighbors(neighbors[i]);
@@ -133,19 +146,13 @@ namespace cube_maze
                 }
             }
         }
-        public override Bitmap GetFullImage(int width, int height)
-        {
-            Point size = sizeImage(width, height, maze.Width, maze.Height);
-            return new Bitmap(maze.GetImage(line, sfPoint), size.X, size.Y);
-        }
         public override Bitmap GetImage(int width, int height)
         {
-            Point imageSize = sizeImage(width, height, maze.Width, maze.Height);
-            return DrawField(sizeImage(width, height, maze.Width, maze.Height), maze.Width, neighbors, player, maze.Finish, maze.Start);
+            return DrawField(sizeImage(width, height), neighbors, player, maze.Finish, maze.Start);
         }
         public override void NewGenerate()
         {
-            maze = new Maze();
+            maze = new MazeNormal();
         }
         public override byte[] GetSave()
         {
@@ -167,18 +174,17 @@ namespace cube_maze
     class GameMazeCyclical : Game
     {
         private Point3 player = new Point3();
-        private Maze2 maze;
+        private MazeCyclical maze;
         private List<Point3> neighbors = new List<Point3>();
 
         public GameMazeCyclical()
         {
-            maze = new Maze2();
+            base.maze = maze = new MazeCyclical();
         }
 
-        public override void Click(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
+        protected override void Click(Point coord)
         {
-            Point coordinate = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse, maze.Height, maze.Width);
-            if (!isPlaying && new Point3(coordinate, 0) == maze.Start)
+            if (!isPlaying && new Point3(coord, 0) == maze.Start)
             {
                 UpdateNeighbors(maze.Start);
                 player = maze.Start;
@@ -187,15 +193,14 @@ namespace cube_maze
             else if (isPlaying && player == maze.Finish)
                 ClickFinish();
         }
-        public override void Move(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
+        protected override void Move(Point coord)
         {
             if (isPlaying)
             {
-                Point coordinate = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse, maze.Height, maze.Width);
-                if (coordinate != player.toPoint())
+                if (coord != player.toPoint())
                 {
                     for (int i = 0; i < neighbors.Count; i++)
-                        if (neighbors[i].toPoint() == coordinate)
+                        if (neighbors[i].toPoint() == coord)
                         {
                             player = neighbors[i];
                             UpdateNeighbors(neighbors[i]);
@@ -205,14 +210,8 @@ namespace cube_maze
                 }
             }
         }
-        public override Bitmap GetFullImage(int width, int height)
-        {
-            Point size = sizeImage(width, height, maze.Width, maze.Height);
-            return new Bitmap(maze.GetImage(line, sfPoint), size.X, size.Y);
-        }
         public override Bitmap GetImage(int width, int height)
         {
-            Point imageSize = sizeImage(width, height, maze.Width, maze.Height);
             List<Point> neighbors = new List<Point>();
             Point Finish = new Point(-1, 0);
             for (int i = 0; i < this.neighbors.Count; i++)
@@ -221,12 +220,11 @@ namespace cube_maze
                 neighbors.Add(this.neighbors[i].toPoint());
             }
             if (player == maze.Finish) Finish = maze.Finish.toPoint();
-            return DrawField(sizeImage(width, height, maze.Width, maze.Height),
-                maze.Width, neighbors, player.toPoint(), Finish, maze.Start.toPoint());
+            return DrawField(sizeImage(width, height), neighbors, player.toPoint(), Finish, maze.Start.toPoint());
         }
         public override void NewGenerate()
         {
-            maze = new Maze2();
+            maze = new MazeCyclical();
         }
         public override byte[] GetSave()
         {
@@ -279,18 +277,17 @@ namespace cube_maze
     class GameMazeDuplex : Game
     {
         private Point3 player = new Point3();
-        private Maze3 maze;
+        private MazeDuplex maze;
         private List<Point> neighbors = new List<Point>();
 
         public GameMazeDuplex()
         {
-            maze = new Maze3();
+            base.maze = maze = new MazeDuplex();
         }
 
-        public override void Click(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
+        protected override void Click(Point coord)
         {
-            Point coordinate = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse, maze.Height, maze.Width);
-            if (!isPlaying && coordinate == maze.Start.toPoint())
+            if (!isPlaying && coord == maze.Start.toPoint())
             {
                 UpdateNeighbors(maze.Start);
                 player = new Point3(maze.Start);
@@ -304,15 +301,14 @@ namespace cube_maze
                 UpdateNeighbors(player);
             }
         }
-        public override void Move(int pictureBoxWidth, int pictureBoxHeight, Point Mouse)
+        protected override void Move(Point coord)
         {
             if (isPlaying)
             {
-                Point coordinate = GetPosition(pictureBoxWidth, pictureBoxHeight, Mouse, maze.Height, maze.Width);
-                if (coordinate != player.toPoint())
+                if (coord != player.toPoint())
                 {
                     for (int i = 0; i < neighbors.Count; i++)
-                        if (neighbors[i] == coordinate)
+                        if (neighbors[i] == coord)
                         {
                             player = new Point3(neighbors[i], player.Z);
                             UpdateNeighbors(new Point3(neighbors[i], player.Z));
@@ -322,17 +318,12 @@ namespace cube_maze
                 }
             }
         }
-        public override Bitmap GetFullImage(int width, int height)
-        {
-            Point size = sizeImage(width, height, maze.Width, maze.Height);
-            return new Bitmap(maze.GetImage(line, sfPoint), size.X, size.Y);
-        }
         public override Bitmap GetImage(int width, int height)
         {
-            Point size = sizeImage(width, height, maze.Width, maze.Height);
-            Bitmap bmp = new Bitmap(size.X, size.Y);
+            Size size = sizeImage(width, height);
+            Bitmap bmp = new Bitmap(size.Width, size.Height);
             Graphics g = Graphics.FromImage(bmp);
-            float Step = (float)(size.X * 1.0 / maze.Width);
+            float Step = (float)(size.Width * 1.0 / maze.Width);
             if (!isPlaying)
                 g.FillRectangle(new SolidBrush(sfPoint), maze.Start.X * Step, maze.Start.Y * Step, Step - 1, Step - 1);
             else
@@ -353,7 +344,7 @@ namespace cube_maze
         }
         public override void NewGenerate()
         {
-            maze = new Maze3();
+            maze = new MazeDuplex();
         }
         public override byte[] GetSave()
         {
@@ -395,6 +386,64 @@ namespace cube_maze
         private bool isNormalCell(byte cell)
         {
             return (cell & 1 << 4) == 0;
+        }
+    }
+    class GameMazeAbstract : Game
+    {
+        private Point player = new Point();
+        private MazeAbstract maze;
+        private List<Point> neighbors = new List<Point>();
+
+        public GameMazeAbstract()
+        {
+            base.maze = maze = new MazeAbstract();
+        }
+
+        protected override void Click(Point coord)
+        {
+            if (!isPlaying && coord == maze.Start)
+            {
+                UpdateNeighbors(maze.Start);
+                player = maze.Start;
+                ClickStart();
+            }
+            else if (isPlaying && player == maze.Finish)
+                ClickFinish();
+            else
+                isPlaying = false;
+        }
+        protected override void Move(Point coord)
+        {
+            if (isPlaying)
+            {
+                if (coord != player)
+                {
+                    for (int i = 0; i < neighbors.Count; i++)
+                        if (neighbors[i] == coord)
+                        {
+                            player = neighbors[i];
+                            UpdateNeighbors(neighbors[i]);
+                            return;
+                        }
+                }
+            }
+        }
+        public override Bitmap GetImage(int width, int height)
+        {
+            return DrawField(sizeImage(width, height), neighbors, player, maze.Finish, maze.Start);
+        }
+        public override byte[] GetSave()
+        {
+            return new byte[0];
+        }
+        public override void NewGenerate()
+        {
+            maze = new MazeAbstract();
+        }
+
+        private void UpdateNeighbors(Point cell)
+        {
+            neighbors = maze.GetNeighbors(cell);
         }
     }
 }

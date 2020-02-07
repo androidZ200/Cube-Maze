@@ -1,24 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Drawing;
-
+using System.Drawing.Drawing2D;
+using System.Collections;
 
 namespace cube_maze
 {
-    class Maze
+    public abstract class Maze
+    {
+        public int Height { get; protected set; }
+        public int Width { get; protected set; }
+        protected Random rnd = new Random();
+        public abstract Bitmap GetImage(Color Line, Color SFPoibt);
+
+        protected bool isOneGroup(IEnumerator groups)
+        {
+            groups.MoveNext();
+            int s = (int)groups.Current;
+            while(groups.MoveNext())
+                if (s != (int)groups.Current) return false;
+            return true;
+        }
+    }
+
+    class MazeNormal : Maze
     {
         public byte[,] maze { get; private set; }
         public Point Finish { get; private set; }
         public Point Start { get; private set; }
-        public int Height { get; private set; }
-        public int Width { get; private set; }
         private Bitmap[] blocks = new Bitmap[16];
-        private Random rnd = new Random();
 
-        public Maze()
+        public MazeNormal()
         {
             Height = rnd.Next(15, 21);
             Width = rnd.Next(9, 14);
@@ -26,7 +38,7 @@ namespace cube_maze
 
             GenerateMaze();
         }
-        public Maze(int width, int height)
+        public MazeNormal(int width, int height)
         {
             Width = width;
             Height = height;
@@ -42,7 +54,7 @@ namespace cube_maze
             if ((t & 1) != 0) neighbors.Add(new Point(Position.X, Position.Y - 1));
             return neighbors;
         }
-        public Bitmap GetImage(Color Line, Color SFPoibt)
+        public override Bitmap GetImage(Color Line, Color SFPoibt)
         {
             Bitmap bmp = new Bitmap(Width * 160, Height * 160);
             Graphics g = Graphics.FromImage(bmp);
@@ -104,37 +116,10 @@ namespace cube_maze
                         break;
                     }
                 }
-            } while (!isOneGroup(group));
+            } while (!isOneGroup(group.GetEnumerator()));
             Finish = new Point(Width / 2, 0);
             Start = new Point(Width / 2, Height - 1);
             maze = field;
-        }
-        private bool isOneGroup(int[,] groups)
-        {
-            int s = groups[0, 0];
-            for (int j = 0; j < groups.GetLength(1); j++)
-                for (int i = 0; i < groups.GetLength(0); i++)
-                    if (s != groups[i, j]) return false;
-            return true;
-        }
-        private byte checkNeighbors(int[,] groups, byte Ix, byte Iy)
-        {
-            byte nei = 0;
-            try { if (groups[Ix, Iy] != groups[Ix, Iy - 1]) nei += 1; }
-            catch { }
-            try { if (groups[Ix, Iy] != groups[Ix + 1, Iy]) nei += 2; }
-            catch { }
-            try { if (groups[Ix, Iy] != groups[Ix, Iy + 1]) nei += 4; }
-            catch { }
-            try { if (groups[Ix, Iy] != groups[Ix - 1, Iy]) nei += 8; }
-            catch { }
-            return nei;
-        }
-        private void fillGroup(int[,] groups, int A, int B)
-        {
-            for (int j = 0; j < groups.GetLength(1); j++)
-                for (int i = 0; i < groups.GetLength(0); i++)
-                    if (groups[i, j] == A) groups[i, j] = B;
         }
         private Bitmap GetBlockImage(Point block, Color line)
         {
@@ -161,6 +146,573 @@ namespace cube_maze
                     }
             blocks[maze[block.X, block.Y]] = bmp;
             return bmp;
+        }
+        private void fillGroup(int[,] groups, int A, int B)
+        {
+                for (int j = 0; j < groups.GetLength(1); j++)
+                    for (int i = 0; i < groups.GetLength(0); i++)
+                        if (groups[i, j] == A) groups[i, j] = B;
+        }
+        private byte checkNeighbors(int[,] groups, int x, int y)
+        {
+            int myGroup = groups[x, y];
+            byte neighbors = 0;
+            for (int i = 0; i < 4; i++)
+                switch (i)
+                {
+                    case 0:
+                        try { if (myGroup != groups[x, y - 1]) neighbors += 1 << 0; }
+                        catch { }
+                        break;
+                    case 1:
+                        try { if (myGroup != groups[x + 1, y]) neighbors += 1 << 1; }
+                        catch { }
+                        break;
+                    case 2:
+                        try { if (myGroup != groups[x, y + 1]) neighbors += 1 << 2; }
+                        catch { }
+                        break;
+                    case 3:
+                        try { if (myGroup != groups[x - 1, y]) neighbors += 1 << 3; }
+                        catch { }
+                        break;
+                }
+            return neighbors;
+        }
+    }
+    class MazeCyclical : Maze
+    {
+        public byte[,,] field { get; private set; }
+        public Point3 Finish { get; private set; }
+        public Point3 Start { get; private set; }
+
+        public MazeCyclical()
+        {
+            Height = rnd.Next(15, 21);
+            Width = rnd.Next(9, 14);
+            if (Width % 2 == 0) Width++;
+
+            Generate();
+        }
+        public MazeCyclical(int width, int height)
+        {
+            Width = width;
+            Height = height;
+            Generate();
+
+        }
+        public byte GetCell(int x, int y, int z)
+        {
+            return field[x, y, z];
+        }
+        public override Bitmap GetImage(Color Line, Color SFPoibt)
+        {
+            Bitmap bmp = new Bitmap(Width * 160, Height * 160);
+            Graphics g = Graphics.FromImage(bmp);
+            for (int j = 0; j < Height; j++)
+                for (int i = 0; i < Width; i++)
+                    g.DrawImage(GetBlockImage(field[i, j, 0], field[i, j, 1], Line), i * 160, j * 160);
+            g.FillEllipse(new SolidBrush(SFPoibt), Start.X * 160 + 60, Start.Y * 160 + 60, 40, 40);
+            g.FillEllipse(new SolidBrush(SFPoibt), Finish.X * 160 + 60, Finish.Y * 160 + 60, 40, 40);
+            return bmp;
+        }
+
+        private void Generate()
+        {
+            field = new byte[Width, Height, 2];
+            int[,,] group = new int[Width, Height, 2];
+            for (int z = 0; z < 2; z++)
+                for (int j = 0; j < Height; j++)
+                    for (int i = 0; i < Width; i++)
+                    {
+                        group[i, j, z] = z * Height * Width + j * Width + i;
+                        field[i, j, z] = 0;
+                    }
+            while (!isOneGroup(group.GetEnumerator()))
+            {
+                int X = rnd.Next(Width);
+                int Y = rnd.Next(Height);
+                int Z = rnd.Next(2);
+                byte neighbors = checkNeighbors(group, X, Y, Z);
+                neighbors &= withWhomYouCanConnect(field[X, Y, Z], field[X, Y, Z ^ 1]);
+                while (neighbors != 0)
+                {
+                    byte rotate = (byte)rnd.Next(8);
+                    if ((neighbors & (1 << rotate)) != 0)
+                    {
+                        int otherGroup = 0;
+                        field[X, Y, Z] += (byte)(1 << rotate);
+                        int z = Z ^ (rotate >= 4 ? 1 : 0);
+                        switch (rotate % 4)
+                        {
+                            case 0:
+                                field[X, Y - 1, z] += (byte)(1 << 2 + 4 * (rotate >= 4 ? 1 : 0));
+                                otherGroup = group[X, Y - 1, z];
+                                break;
+                            case 1:
+                                field[X + 1, Y, z] += (byte)(1 << 3 + 4 * (rotate >= 4 ? 1 : 0));
+                                otherGroup = group[X + 1, Y, z];
+                                break;
+                            case 2:
+                                field[X, Y + 1, z] += (byte)(1 << 0 + 4 * (rotate >= 4 ? 1 : 0));
+                                otherGroup = group[X, Y + 1, z];
+                                break;
+                            case 3:
+                                field[X - 1, Y, z] += (byte)(1 << 1 + 4 * (rotate >= 4 ? 1 : 0));
+                                otherGroup = group[X - 1, Y, z];
+                                break;
+                        }
+                        FillGriop(group, otherGroup, group[X, Y, Z]);
+                        break;
+                    }
+                }
+            }
+            Finish = new Point3(Width / 2, 0, 0);
+            Start = new Point3(Width / 2, Height - 1, 0);
+        }
+        private byte checkNeighbors(int[,,] groups, int x, int y, int z)
+        {
+            byte nei = 0;
+            try { if (groups[x, y, z] != groups[x, y - 1, z]) nei |= (1 << 0); }
+            catch { }
+            try { if (groups[x, y, z] != groups[x + 1, y, z]) nei |= (1 << 1); }
+            catch { }
+            try { if (groups[x, y, z] != groups[x, y + 1, z]) nei |= (1 << 2); }
+            catch { }
+            try { if (groups[x, y, z] != groups[x - 1, y, z]) nei |= (1 << 3); }
+            catch { }
+
+            try { if (groups[x, y, z] != groups[x, y - 1, z ^ 1]) nei |= (1 << 4); }
+            catch { }
+            try { if (groups[x, y, z] != groups[x + 1, y, z ^ 1]) nei |= (1 << 5); }
+            catch { }
+            try { if (groups[x, y, z] != groups[x, y + 1, z ^ 1]) nei |= (1 << 6); }
+            catch { }
+            try { if (groups[x, y, z] != groups[x - 1, y, z ^ 1]) nei |= (1 << 7); }
+            catch { }
+            return nei;
+        }
+        private byte withWhomYouCanConnect(byte I, byte otherI)
+        {
+            I |= (byte)(I << 4);
+            I |= (byte)(I >> 4);
+            otherI = (byte)((otherI >> 4) + (otherI << 4));
+            I |= otherI;
+            return (byte)~I;
+        }
+        private void FillGriop(int[,,] groups, int A, int B)
+        {
+            for (int z = 0; z < groups.GetLength(2); z++)
+                for (int j = 0; j < groups.GetLength(1); j++)
+                    for (int i = 0; i < groups.GetLength(0); i++)
+                        if (groups[i, j, z] == A) groups[i, j, z] = B;
+        }
+
+        private Bitmap GetBlockImage(byte blockDown, byte blockUp, Color line)
+        {
+            Bitmap bmp = new Bitmap(160, 160);
+            Graphics g = Graphics.FromImage(bmp);
+            g.FillEllipse(new SolidBrush(line), 16, 16, 128, 128);
+            for (int i = 0; i < 8; i++)
+                if ((blockUp & (1 << i)) != 0)
+                    switch (i)
+                    {
+                        case 0:
+                            g.FillRectangle(new SolidBrush(line), 16, 0, 128, 80);
+                            break;
+                        case 1:
+                            g.FillRectangle(new SolidBrush(line), 80, 16, 80, 128);
+                            break;
+                        case 2:
+                            g.FillRectangle(new SolidBrush(line), 16, 80, 128, 80);
+                            break;
+                        case 3:
+                            g.FillRectangle(new SolidBrush(line), 0, 16, 80, 128);
+                            break;
+                        case 4:
+                            g.DrawImage(GetTriangleDown(line), 0, -80);
+                            break;
+                        case 5:
+                            g.DrawImage(GetTriangleLeft(line), 80, 0);
+                            break;
+                        case 6:
+                            g.DrawImage(GetTriangleUp(line), 0, 80);
+                            break;
+                        case 7:
+                            g.DrawImage(GetTriangleRight(line), -80, 0);
+                            break;
+                    }
+            for (int i = 0; i < 4; i++)
+                if ((blockDown & (1 << (i + 4))) != 0)
+                    switch (i)
+                    {
+                        case 0:
+                            g.DrawImage(GetTriangleUp(line), 0, -80);
+                            break;
+                        case 1:
+                            g.DrawImage(GetTriangleRight(line), 80, 0);
+                            break;
+                        case 2:
+                            g.DrawImage(GetTriangleDown(line), 0, 80);
+                            break;
+                        case 3:
+                            g.DrawImage(GetTriangleLeft(line), -80, 0);
+                            break;
+                    }
+            g.FillEllipse(new SolidBrush(Color.Black), 60, 60, 40, 40);
+            for (int i = 0; i < 4; i++)
+                if ((blockDown & (1 << i)) != 0)
+                    switch (i)
+                    {
+                        case 0:
+                            g.FillRectangle(new SolidBrush(Color.Black), 60, 0, 40, 80);
+                            break;
+                        case 1:
+                            g.FillRectangle(new SolidBrush(Color.Black), 80, 60, 80, 40);
+                            break;
+                        case 2:
+                            g.FillRectangle(new SolidBrush(Color.Black), 60, 80, 40, 80);
+                            break;
+                        case 3:
+                            g.FillRectangle(new SolidBrush(Color.Black), 0, 60, 80, 40);
+                            break;
+                    }
+            return bmp;
+        }
+        private Bitmap GetTriangleRight(Color line)
+        {
+            Bitmap bmp = new Bitmap(160, 160);
+            Graphics g = Graphics.FromImage(bmp);
+            LinearGradientBrush linGrBrush = new LinearGradientBrush(new Point(0, 80), new Point(135, 80), Color.Black, line);
+            Point[] points = { new Point(0, 60), new Point(0, 100), new Point(135, 139), new Point(135, 21) };
+            g.FillPolygon(linGrBrush, points);
+            return bmp;
+        }
+        private Bitmap GetTriangleLeft(Color line)
+        {
+            Bitmap bmp = new Bitmap(160, 160);
+            Graphics g = Graphics.FromImage(bmp);
+            LinearGradientBrush linGrBrush = new LinearGradientBrush(new Point(160, 80), new Point(24, 80), Color.Black, line);
+            Point[] points = { new Point(160, 60), new Point(160, 100), new Point(25, 139), new Point(25, 21) };
+            g.FillPolygon(linGrBrush, points);
+            return bmp;
+        }
+        private Bitmap GetTriangleUp(Color line)
+        {
+            Bitmap bmp = new Bitmap(160, 160);
+            Graphics g = Graphics.FromImage(bmp);
+            LinearGradientBrush linGrBrush = new LinearGradientBrush(new Point(80, 160), new Point(80, 24), Color.Black, line);
+            Point[] points = { new Point(21, 25), new Point(139, 25), new Point(100, 160), new Point(60, 160) };
+            g.FillPolygon(linGrBrush, points);
+            return bmp;
+        }
+        private Bitmap GetTriangleDown(Color line)
+        {
+            Bitmap bmp = new Bitmap(160, 160);
+            Graphics g = Graphics.FromImage(bmp);
+            LinearGradientBrush linGrBrush = new LinearGradientBrush(new Point(80, 0), new Point(80, 135), Color.Black, line);
+            Point[] points = { new Point(21, 135), new Point(139, 135), new Point(100, 0), new Point(60, 0) };
+            g.FillPolygon(linGrBrush, points);
+            return bmp;
+        }
+    }
+    class MazeDuplex : Maze
+    {
+        public byte[,,] field { get; private set; }
+        public Point3 Finish { get; private set; }
+        public Point3 Start { get; private set; }
+
+        public MazeDuplex()
+        {
+            Height = rnd.Next(15, 21);
+            Width = rnd.Next(9, 14);
+            if (Width % 2 == 0) Width++;
+
+            Generate();
+        }
+        public MazeDuplex(int width, int height)
+        {
+            Width = width;
+            Height = height;
+            Generate();
+
+        }
+        public byte GetCell(int x, int y, int z)
+        {
+            return field[x, y, z];
+        }
+        public byte GetCell(Point3 p)
+        {
+            return GetCell(p.X, p.Y, p.Z);
+        }
+        public override Bitmap GetImage(Color Line, Color SFPoibt)
+        {
+            Bitmap bmp = new Bitmap(Width * 160, Height * 160);
+            Graphics g = Graphics.FromImage(bmp);
+            for (int j = 0; j < Height; j++)
+                for (int i = 0; i < Width; i++)
+                    g.DrawImage(GetBlockImage(field[i, j, 0], field[i, j, 1], Line), i * 160, j * 160);
+            if ((field[Start.X, Start.Y, Start.Z] & (1 << 4)) == 0)
+                g.FillEllipse(new SolidBrush(SFPoibt), Start.X * 160 + 60, Start.Y * 160 + 60, 40, 40);
+            else
+            {
+                g.FillEllipse(new SolidBrush(SFPoibt), Start.X * 160 + 50, Start.Y * 160 + 50, 60, 60);
+                g.FillEllipse(new SolidBrush(Line), Start.X * 160 + 70, Start.Y * 160 + 70, 20, 20);
+            }
+            if ((field[Finish.X, Finish.Y, Finish.Z] & (1 << 4)) == 0)
+                g.FillEllipse(new SolidBrush(SFPoibt), Finish.X * 160 + 60, Finish.Y * 160 + 60, 40, 40);
+            else
+            {
+                g.FillEllipse(new SolidBrush(SFPoibt), Finish.X * 160 + 50, Finish.Y * 160 + 50, 60, 60);
+                g.FillEllipse(new SolidBrush(Line), Finish.X * 160 + 70, Finish.Y * 160 + 70, 20, 20);
+            }
+            return bmp;
+        }
+
+        private Bitmap GetBlockImage(byte blockDown, byte blockUp, Color line)
+        {
+            Bitmap bmp = new Bitmap(160, 160);
+            Graphics g = Graphics.FromImage(bmp);
+            g.FillEllipse(new SolidBrush(line), 16, 16, 128, 128);
+            for (int i = 0; i < 4; i++)
+                if ((blockUp & (1 << i)) != 0)
+                    switch (i)
+                    {
+                        case 0:
+                            g.FillRectangle(new SolidBrush(line), 16, 0, 128, 80);
+                            break;
+                        case 1:
+                            g.FillRectangle(new SolidBrush(line), 80, 16, 80, 128);
+                            break;
+                        case 2:
+                            g.FillRectangle(new SolidBrush(line), 16, 80, 128, 80);
+                            break;
+                        case 3:
+                            g.FillRectangle(new SolidBrush(line), 0, 16, 80, 128);
+                            break;
+                    }
+            g.FillEllipse(new SolidBrush(Color.Black), 60, 60, 40, 40);
+            for (int i = 0; i < 4; i++)
+                if ((blockDown & (1 << i)) != 0)
+                    switch (i)
+                    {
+                        case 0:
+                            g.FillRectangle(new SolidBrush(Color.Black), 60, 0, 40, 80);
+                            break;
+                        case 1:
+                            g.FillRectangle(new SolidBrush(Color.Black), 80, 60, 80, 40);
+                            break;
+                        case 2:
+                            g.FillRectangle(new SolidBrush(Color.Black), 60, 80, 40, 80);
+                            break;
+                        case 3:
+                            g.FillRectangle(new SolidBrush(Color.Black), 0, 60, 80, 40);
+                            break;
+                    }
+            if ((blockUp & (1 << 4)) != 0)
+            {
+                g.FillEllipse(new SolidBrush(Color.Black), 50, 50, 60, 60);
+                g.FillEllipse(new SolidBrush(line), 70, 70, 20, 20);
+            }
+            return bmp;
+        }
+        private void Generate()
+        {
+            field = new byte[Width, Height, 2];
+            int[,,] group = new int[Width, Height, 2];
+            for (int z = 0; z < 2; z++)
+                for (int j = 0; j < Height; j++)
+                    for (int i = 0; i < Width; i++)
+                    {
+                        group[i, j, z] = z * Height * Width + j * Width + i;
+                        field[i, j, z] = 0;
+                    }
+            while (!isOneGroup(group.GetEnumerator()))
+            {
+                int X = rnd.Next(Width);
+                int Y = rnd.Next(Height);
+                int Z = rnd.Next(2);
+                byte neighbors = checkNeighbors(group, X, Y, Z);
+                while (neighbors != 0)
+                {
+                    byte rotate = (byte)rnd.Next(5);
+                    if ((neighbors & (1 << rotate)) != 0)
+                    {
+                        int otherGroup = 0;
+                        switch (rotate)
+                        {
+                            case 0:
+                                otherGroup = group[X, Y - 1, Z];
+                                field[X, Y - 1, Z] += (1 << 2);
+                                break;
+                            case 1:
+                                otherGroup = group[X + 1, Y, Z];
+                                field[X + 1, Y, Z] += (1 << 3);
+                                break;
+                            case 2:
+                                otherGroup = group[X, Y + 1, Z];
+                                field[X, Y + 1, Z] += (1 << 0);
+                                break;
+                            case 3:
+                                otherGroup = group[X - 1, Y, Z];
+                                field[X - 1, Y, Z] += (1 << 1);
+                                break;
+                            case 4:
+                                otherGroup = group[X, Y, Z ^ 1];
+                                field[X, Y, Z ^ 1] += (1 << 4);
+                                break;
+                        }
+                        field[X, Y, Z] += (byte)(1 << rotate);
+                        FillGroup(group, otherGroup, group[X, Y, Z]);
+                        break;
+                    }
+                }
+            }
+            Finish = new Point3(Width / 2, 0, 0);
+            Start = new Point3(Width / 2, Height - 1, 0);
+        }
+        private void FillGroup(int[,,] groups, int A, int B)
+        {
+            for (int z = 0; z < groups.GetLength(2); z++)
+                for (int j = 0; j < groups.GetLength(1); j++)
+                    for (int i = 0; i < groups.GetLength(0); i++)
+                        if (groups[i, j, z] == A) groups[i, j, z] = B;
+        }
+        private byte checkNeighbors(int[,,] groups, int x, int y, int z)
+        {
+            int myGroup = groups[x, y, z];
+            byte neighbors = 0;
+            for (int i = 0; i < 5; i++)
+                switch (i)
+                {
+                    case 0:
+                        try { if (myGroup != groups[x, y - 1, z]) neighbors += 1 << 0; }
+                        catch { }
+                        break;
+                    case 1:
+                        try { if (myGroup != groups[x + 1, y, z]) neighbors += 1 << 1; }
+                        catch { }
+                        break;
+                    case 2:
+                        try { if (myGroup != groups[x, y + 1, z]) neighbors += 1 << 2; }
+                        catch { }
+                        break;
+                    case 3:
+                        try { if (myGroup != groups[x - 1, y, z]) neighbors += 1 << 3; }
+                        catch { }
+                        break;
+                    case 4:
+                        try { if (myGroup != groups[x, y, z ^ 1]) neighbors += 1 << 4; }
+                        catch { }
+                        break;
+                }
+            return neighbors;
+        }
+    }
+    class MazeAbstract : Maze
+    {
+        public class Cell
+        {
+            public Point coord;
+            public Cell[] Neighbors;
+            public Cell(int x, int y)
+            {
+                Neighbors = new Cell[4];
+                coord = new Point(x, y);
+            }
+        }
+
+        public Cell[,] field { get; private set; }
+        public Point Finish { get; private set; }
+        public Point Start { get; private set; }
+
+        public MazeAbstract()
+        {
+            Height = rnd.Next(15, 21);
+            Width = rnd.Next(9, 14);
+            if (Width % 2 == 0) Width++;
+
+            GenerateMaze();
+        }
+        public MazeAbstract(int width, int height)
+        {
+            Width = width;
+            Height = height;
+            GenerateMaze();
+        }
+        public List<Point> GetNeighbors(Point Position)
+        {
+            List<Point> neighbors = new List<Point>();
+            foreach (var x in field[Position.X, Position.Y].Neighbors)
+                if (x != null)
+                    neighbors.Add(x.coord);
+            return neighbors;
+        }
+        public override Bitmap GetImage(Color Line, Color SFPoint)
+        {
+            Bitmap bmp = new Bitmap(Width * 160, Height * 160);
+            Graphics g = Graphics.FromImage(bmp);
+            DrawLines(field[Start.X, Start.Y], null, g, new Pen(Line, 5));
+            for (int j = 0; j < Height; j++)
+                for (int i = 0; i < Width; i++)
+                    g.FillEllipse(new SolidBrush(Line), i * 160 + 70, j * 160 + 70, 20, 20);
+            g.FillEllipse(new SolidBrush(SFPoint), Start.X * 160 + 60, Start.Y * 160 + 60, 40, 40);
+            g.FillEllipse(new SolidBrush(SFPoint), Finish.X * 160 + 60, Finish.Y * 160 + 60, 40, 40);
+            return bmp;
+        }
+        private void DrawLines(Cell x, Cell prev, Graphics g, Pen line)
+        {
+            foreach (var i in x.Neighbors)
+                if (i != null && i != prev)
+                {
+                    g.DrawLine(line, GetPoint(x), GetPoint(i));
+                    DrawLines(i, x, g, line);
+                }
+        }
+        private Point GetPoint(Cell c)
+        {
+            return new Point(c.coord.X * 160 + 80, c.coord.Y * 160 + 80);
+        }
+
+        private void GenerateMaze()
+        {
+            field = new Cell[Width, Height];
+            Start = new Point(Width / 2, Height - 1);
+            Finish = new Point(Width / 2, 0);
+            int[,] groups = new int[Width, Height];
+            for (int j = 0; j < Height; j++)
+                for (int i = 0; i < Width; i++)
+                {
+                    groups[i, j] = j * Width + i;
+                    field[i, j] = new Cell(i, j);
+                }
+            while (!isOneGroup(groups.GetEnumerator()))
+            {
+                int x = rnd.Next(Width);
+                int y = rnd.Next(Height);
+                if (field[x, y].Neighbors[3] != null) continue;
+                int i = 0;
+                for (i = 0; i < 4; i++) if (field[x, y].Neighbors[i] == null) break;
+
+                int ox = rnd.Next(Width);
+                int oy = rnd.Next(Height);
+                if (field[ox, oy].Neighbors[3] != null) continue;
+                int oi = 0;
+                for (oi = 0; oi < 4; oi++) if (field[ox, oy].Neighbors[oi] == null) break;
+
+                if (groups[x, y] != groups[ox, oy])
+                {
+                    field[x, y].Neighbors[i] = field[ox, oy];
+                    field[ox, oy].Neighbors[oi] = field[x, y];
+                    fillGroup(groups, groups[x, y], groups[ox, oy]);
+                }
+            }
+        }
+        private void fillGroup(int[,] groups, int A, int B)
+        {
+            for (int j = 0; j < groups.GetLength(1); j++)
+                for (int i = 0; i < groups.GetLength(0); i++)
+                    if (groups[i, j] == A) groups[i, j] = B;
         }
     }
 }

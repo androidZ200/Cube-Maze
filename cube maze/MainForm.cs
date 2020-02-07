@@ -1,13 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.IO;
 
 namespace cube_maze
 {
@@ -20,13 +13,7 @@ namespace cube_maze
         public MainForm()
         {
             InitializeComponent();
-
-            button1.FlatAppearance.BorderSize = 0;
-            button2.FlatAppearance.BorderSize = 0;
-            button3.FlatAppearance.BorderSize = 0;
-            button1.FlatStyle = FlatStyle.Flat;
-            button2.FlatStyle = FlatStyle.Flat;
-            button3.FlatStyle = FlatStyle.Flat;
+            SetTheme(true);
         }
 
         private void SetTheme(bool Light)
@@ -37,11 +24,13 @@ namespace cube_maze
                 button1.ForeColor = Text;
                 button2.ForeColor = Text;
                 button3.ForeColor = Text;
+                button4.ForeColor = Text;
                 checkBox1.ForeColor = Text;
 
                 button1.BackColor = Background;
                 button2.BackColor = Background;
                 button3.BackColor = Background;
+                button4.BackColor = Background;
             };
             if (Light)
             {
@@ -74,6 +63,13 @@ namespace cube_maze
         private void button3_Click(object sender, EventArgs e)
         {
             Game t = new GameMazeDuplex();
+            t.sfPoint = LightColor[rand.Next(LightColor.Length)];
+            GameForm form = new GameForm(t, Background);
+            form.Show();
+        }
+        private void button4_Click(object sender, EventArgs e)
+        {
+            Game t = new GameMazeAbstract();
             t.sfPoint = LightColor[rand.Next(LightColor.Length)];
             GameForm form = new GameForm(t, Background);
             form.Show();

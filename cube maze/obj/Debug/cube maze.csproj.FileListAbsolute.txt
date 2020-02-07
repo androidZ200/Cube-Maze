@@ -9,3 +9,13 @@ C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube maze.pdb
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube_maze.MainForm.resources
 C:\Users\Даниил\Documents\Visual Studio 2017\Projects\cube maze\cube maze\obj\Debug\cube_maze.GameForm.resources
+E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\bin\Debug\cube maze.exe.config
+E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\bin\Debug\cube maze.exe
+E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\bin\Debug\cube maze.pdb
+E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube maze.csprojAssemblyReference.cache
+E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube_maze.GameForm.resources
+E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube_maze.MainForm.resources
+E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube_maze.Properties.Resources.resources
+E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube maze.csproj.GenerateResource.cache
+E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube maze.exe
+E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube maze.pdb
