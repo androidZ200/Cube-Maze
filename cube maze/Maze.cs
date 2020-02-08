@@ -10,14 +10,35 @@ namespace cube_maze
     {
         public int Height { get; protected set; }
         public int Width { get; protected set; }
+        public Point3 Start { get; protected set; }
+        public Point3 Finish { get; protected set; }
         protected Random rnd = new Random();
-        public abstract Bitmap GetImage(Color Line, Color SFPoibt);
+        public abstract Bitmap GetFullImage(Color Line, Color SFPoibt);
+        public abstract Point3[] GetNeighbors(Point3 I);
+        public virtual Bitmap GetImage(Point3 coordinate, Color Line, Color SFPoibt)
+        {
+            Bitmap image = new Bitmap(Width * 64 - 2, Height * 64 - 2);
+            Graphics g = Graphics.FromImage(image);
+            Point3[] neighbors = GetNeighbors(coordinate);
+            g.DrawImage(GetCell(coordinate, Line, SFPoibt), coordinate.X * 64, coordinate.Y * 64);
+            for(int i = 0; i < neighbors.Length; i++)
+                g.DrawImage(GetCell(neighbors[i], Line, SFPoibt), neighbors[i].X * 64, neighbors[i].Y * 64);
+            return image;
+        }
+        protected virtual Bitmap GetCell(Point3 cell, Color Line, Color SFPoibt)
+        {
+            Bitmap bmp = new Bitmap(62, 62);
+            Graphics g = Graphics.FromImage(bmp);
+            if (cell == Finish) g.Clear(SFPoibt);
+            else g.Clear(Line);
+            return bmp;
+        }
 
         protected bool isOneGroup(IEnumerator groups)
         {
             groups.MoveNext();
             int s = (int)groups.Current;
-            while(groups.MoveNext())
+            while (groups.MoveNext())
                 if (s != (int)groups.Current) return false;
             return true;
         }
@@ -26,8 +47,6 @@ namespace cube_maze
     class MazeNormal : Maze
     {
         public byte[,] maze { get; private set; }
-        public Point Finish { get; private set; }
-        public Point Start { get; private set; }
         private Bitmap[] blocks = new Bitmap[16];
 
         public MazeNormal()
@@ -44,17 +63,28 @@ namespace cube_maze
             Height = height;
             GenerateMaze();
         }
-        public List<Point> GetNeighbors(Point Position)
+        public override Point3[] GetNeighbors(Point3 Position)
         {
-            List<Point> neighbors = new List<Point>();
+            Point3[] neighbors;
+            int s = 0;
             int t = maze[Position.X, Position.Y];
-            if ((t & 8) != 0) neighbors.Add(new Point(Position.X - 1, Position.Y));
-            if ((t & 4) != 0) neighbors.Add(new Point(Position.X, Position.Y + 1));
-            if ((t & 2) != 0) neighbors.Add(new Point(Position.X + 1, Position.Y));
-            if ((t & 1) != 0) neighbors.Add(new Point(Position.X, Position.Y - 1));
+
+            if ((t & 8) != 0) s++;
+            if ((t & 4) != 0) s++;
+            if ((t & 2) != 0) s++;
+            if ((t & 1) != 0) s++;
+
+            neighbors = new Point3[s];
+            int i = 0;
+
+            if ((t & 8) != 0) { neighbors[i] = new Point3(Position.X - 1, Position.Y, 0); i++; }
+            if ((t & 4) != 0) { neighbors[i] = new Point3(Position.X, Position.Y + 1, 0); i++; }
+            if ((t & 2) != 0) { neighbors[i] = new Point3(Position.X + 1, Position.Y, 0); i++; }
+            if ((t & 1) != 0) { neighbors[i] = new Point3(Position.X, Position.Y - 1, 0); i++; }
+
             return neighbors;
         }
-        public override Bitmap GetImage(Color Line, Color SFPoibt)
+        public override Bitmap GetFullImage(Color Line, Color SFPoibt)
         {
             Bitmap bmp = new Bitmap(Width * 160, Height * 160);
             Graphics g = Graphics.FromImage(bmp);
@@ -117,8 +147,8 @@ namespace cube_maze
                     }
                 }
             } while (!isOneGroup(group.GetEnumerator()));
-            Finish = new Point(Width / 2, 0);
-            Start = new Point(Width / 2, Height - 1);
+            Finish = new Point3(Width / 2, 0, 0);
+            Start = new Point3(Width / 2, Height - 1, 0);
             maze = field;
         }
         private Bitmap GetBlockImage(Point block, Color line)
@@ -149,9 +179,9 @@ namespace cube_maze
         }
         private void fillGroup(int[,] groups, int A, int B)
         {
-                for (int j = 0; j < groups.GetLength(1); j++)
-                    for (int i = 0; i < groups.GetLength(0); i++)
-                        if (groups[i, j] == A) groups[i, j] = B;
+            for (int j = 0; j < groups.GetLength(1); j++)
+                for (int i = 0; i < groups.GetLength(0); i++)
+                    if (groups[i, j] == A) groups[i, j] = B;
         }
         private byte checkNeighbors(int[,] groups, int x, int y)
         {
@@ -183,8 +213,6 @@ namespace cube_maze
     class MazeCyclical : Maze
     {
         public byte[,,] field { get; private set; }
-        public Point3 Finish { get; private set; }
-        public Point3 Start { get; private set; }
 
         public MazeCyclical()
         {
@@ -205,7 +233,7 @@ namespace cube_maze
         {
             return field[x, y, z];
         }
-        public override Bitmap GetImage(Color Line, Color SFPoibt)
+        public override Bitmap GetFullImage(Color Line, Color SFPoibt)
         {
             Bitmap bmp = new Bitmap(Width * 160, Height * 160);
             Graphics g = Graphics.FromImage(bmp);
@@ -215,6 +243,41 @@ namespace cube_maze
             g.FillEllipse(new SolidBrush(SFPoibt), Start.X * 160 + 60, Start.Y * 160 + 60, 40, 40);
             g.FillEllipse(new SolidBrush(SFPoibt), Finish.X * 160 + 60, Finish.Y * 160 + 60, 40, 40);
             return bmp;
+        }
+        public override Point3[] GetNeighbors(Point3 Position)
+        {
+            byte I = field[Position.X, Position.Y, Position.Z];
+            List<Point3> neighbors = new List<Point3>();
+            for (int i = 0; i < 8; i++)
+                if ((I & (1 << i)) != 0)
+                    switch (i)
+                    {
+                        case 0:
+                            neighbors.Add(new Point3(Position.X, Position.Y - 1, Position.Z));
+                            break;
+                        case 1:
+                            neighbors.Add(new Point3(Position.X + 1, Position.Y, Position.Z));
+                            break;
+                        case 2:
+                            neighbors.Add(new Point3(Position.X, Position.Y + 1, Position.Z));
+                            break;
+                        case 3:
+                            neighbors.Add(new Point3(Position.X - 1, Position.Y, Position.Z));
+                            break;
+                        case 4:
+                            neighbors.Add(new Point3(Position.X, Position.Y - 1, Position.Z ^ 1));
+                            break;
+                        case 5:
+                            neighbors.Add(new Point3(Position.X + 1, Position.Y, Position.Z ^ 1));
+                            break;
+                        case 6:
+                            neighbors.Add(new Point3(Position.X, Position.Y + 1, Position.Z ^ 1));
+                            break;
+                        case 7:
+                            neighbors.Add(new Point3(Position.X - 1, Position.Y, Position.Z ^ 1));
+                            break;
+                    }
+            return neighbors.ToArray();
         }
 
         private void Generate()
@@ -419,8 +482,6 @@ namespace cube_maze
     class MazeDuplex : Maze
     {
         public byte[,,] field { get; private set; }
-        public Point3 Finish { get; private set; }
-        public Point3 Start { get; private set; }
 
         public MazeDuplex()
         {
@@ -445,7 +506,7 @@ namespace cube_maze
         {
             return GetCell(p.X, p.Y, p.Z);
         }
-        public override Bitmap GetImage(Color Line, Color SFPoibt)
+        public override Bitmap GetFullImage(Color Line, Color SFPoibt)
         {
             Bitmap bmp = new Bitmap(Width * 160, Height * 160);
             Graphics g = Graphics.FromImage(bmp);
@@ -467,6 +528,44 @@ namespace cube_maze
                 g.FillEllipse(new SolidBrush(Line), Finish.X * 160 + 70, Finish.Y * 160 + 70, 20, 20);
             }
             return bmp;
+        }
+        public override Point3[] GetNeighbors(Point3 Position)
+        {
+            Point3[] neighbors;
+            int s = 0;
+            int t = field[Position.X, Position.Y, Position.Z];
+
+            if ((t & 8) != 0) s++;
+            if ((t & 4) != 0) s++;
+            if ((t & 2) != 0) s++;
+            if ((t & 1) != 0) s++;
+
+            neighbors = new Point3[s];
+            int i = 0;
+
+            if ((t & 8) != 0) { neighbors[i] = new Point3(Position.X - 1, Position.Y, Position.Z); i++; }
+            if ((t & 4) != 0) { neighbors[i] = new Point3(Position.X, Position.Y + 1, Position.Z); i++; }
+            if ((t & 2) != 0) { neighbors[i] = new Point3(Position.X + 1, Position.Y, Position.Z); i++; }
+            if ((t & 1) != 0) { neighbors[i] = new Point3(Position.X, Position.Y - 1, Position.Z); i++; }
+
+            return neighbors;
+        }
+        protected override Bitmap GetCell(Point3 cell, Color Line, Color SFPoibt)
+        {
+            if((GetCell(cell) & (1 << 4)) == 0)
+                return base.GetCell(cell, Line, SFPoibt);
+            Bitmap t = new Bitmap(62, 62);
+            Graphics g = Graphics.FromImage(t);
+
+            Color line = Line;
+            if (cell == Finish) line = SFPoibt;
+
+            g.FillRectangle(new SolidBrush(line), 0, 0, 62, 16);
+            g.FillRectangle(new SolidBrush(line), 0, 46, 62, 16);
+            g.FillRectangle(new SolidBrush(line), 0, 0, 16, 62);
+            g.FillRectangle(new SolidBrush(line), 46, 0, 16, 62);
+
+            return t;
         }
 
         private Bitmap GetBlockImage(byte blockDown, byte blockUp, Color line)
@@ -623,8 +722,6 @@ namespace cube_maze
         }
 
         public Cell[,] field { get; private set; }
-        public Point Finish { get; private set; }
-        public Point Start { get; private set; }
 
         public MazeAbstract()
         {
@@ -648,7 +745,7 @@ namespace cube_maze
                     neighbors.Add(x.coord);
             return neighbors;
         }
-        public override Bitmap GetImage(Color Line, Color SFPoint)
+        public override Bitmap GetFullImage(Color Line, Color SFPoint)
         {
             Bitmap bmp = new Bitmap(Width * 160, Height * 160);
             Graphics g = Graphics.FromImage(bmp);
@@ -659,6 +756,18 @@ namespace cube_maze
             g.FillEllipse(new SolidBrush(SFPoint), Start.X * 160 + 60, Start.Y * 160 + 60, 40, 40);
             g.FillEllipse(new SolidBrush(SFPoint), Finish.X * 160 + 60, Finish.Y * 160 + 60, 40, 40);
             return bmp;
+        }
+        public override Point3[] GetNeighbors(Point3 Position)
+        {
+            int t = 0;
+            for (int i = 0; i < 4; i++)
+                if (field[Position.X, Position.Y].Neighbors[i] != null) t = i + 1;
+            Point3[] neighbors = new Point3[t];
+
+            for (int i = 0; i < neighbors.Length; i++)
+                neighbors[i] = new Point3(field[Position.X, Position.Y].Neighbors[i].coord, 0);
+
+            return neighbors;
         }
         private void DrawLines(Cell x, Cell prev, Graphics g, Pen line)
         {
@@ -677,8 +786,8 @@ namespace cube_maze
         private void GenerateMaze()
         {
             field = new Cell[Width, Height];
-            Start = new Point(Width / 2, Height - 1);
-            Finish = new Point(Width / 2, 0);
+            Start = new Point3(Width / 2, Height - 1, 0);
+            Finish = new Point3(Width / 2, 0, 0);
             int[,] groups = new int[Width, Height];
             for (int j = 0; j < Height; j++)
                 for (int i = 0; i < Width; i++)

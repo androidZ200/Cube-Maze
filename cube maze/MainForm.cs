@@ -45,34 +45,36 @@ namespace cube_maze
                 action(Color.FromArgb(0x33, 0x33, 0x36), Color.White);
             }
         }
+        private void StartGame(Game game)
+        {
+            game.sfPoint = LightColor[rand.Next(LightColor.Length)];
+            GameForm form = new GameForm(game, Background);
+            form.Show();
+        }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Game t = new GameMazeNormal();
-            t.sfPoint = LightColor[rand.Next(LightColor.Length)];
-            GameForm form = new GameForm(t, Background);
-            form.Show();
+            Game t = new Game();
+            t.NewGenerate(Game.Mode.Normal);
+            StartGame(t);
         }
         private void button2_Click(object sender, EventArgs e)
         {
-            Game t = new GameMazeCyclical();
-            t.sfPoint = LightColor[rand.Next(LightColor.Length)];
-            GameForm form = new GameForm(t, Background);
-            form.Show();
+            Game t = new Game();
+            t.NewGenerate(Game.Mode.Cyclical);
+            StartGame(t);
         }
         private void button3_Click(object sender, EventArgs e)
         {
-            Game t = new GameMazeDuplex();
-            t.sfPoint = LightColor[rand.Next(LightColor.Length)];
-            GameForm form = new GameForm(t, Background);
-            form.Show();
+            Game t = new Game();
+            t.NewGenerate(Game.Mode.Dualex);
+            StartGame(t);
         }
         private void button4_Click(object sender, EventArgs e)
         {
-            Game t = new GameMazeAbstract();
-            t.sfPoint = LightColor[rand.Next(LightColor.Length)];
-            GameForm form = new GameForm(t, Background);
-            form.Show();
+            Game t = new Game();
+            t.NewGenerate(Game.Mode.Abstract);
+            StartGame(t);
         }
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {

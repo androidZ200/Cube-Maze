@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace cube_maze
 {
-    class Point3
+    public class Point3
     {
         public int X, Y, Z;
 
