@@ -12,7 +12,7 @@ namespace cube_maze
     {
         public enum Mode
         {
-            Normal, Cyclical, Dualex, Abstract
+            Normal, Cyclical, Dualex, Abstract, Oriented
         }
 
         private Maze maze;
@@ -94,6 +94,9 @@ namespace cube_maze
                     break;
                 case Mode.Normal:
                     maze = new MazeNormal();
+                    break;
+                case Mode.Oriented:
+                    maze = new MazeOriented();
                     break;
             }
         }

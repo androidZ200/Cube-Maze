@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Collections;
+using System.Threading;
 
 namespace cube_maze
 {
@@ -21,7 +22,7 @@ namespace cube_maze
             Graphics g = Graphics.FromImage(image);
             Point3[] neighbors = GetNeighbors(coordinate);
             g.DrawImage(GetCell(coordinate, Line, SFPoibt), coordinate.X * 64, coordinate.Y * 64);
-            for(int i = 0; i < neighbors.Length; i++)
+            for (int i = 0; i < neighbors.Length; i++)
                 g.DrawImage(GetCell(neighbors[i], Line, SFPoibt), neighbors[i].X * 64, neighbors[i].Y * 64);
             return image;
         }
@@ -46,7 +47,7 @@ namespace cube_maze
 
     class MazeNormal : Maze
     {
-        public byte[,] maze { get; private set; }
+        protected byte[,] maze { get; private set; }
         private Bitmap[] blocks = new Bitmap[16];
 
         public MazeNormal()
@@ -552,7 +553,7 @@ namespace cube_maze
         }
         protected override Bitmap GetCell(Point3 cell, Color Line, Color SFPoibt)
         {
-            if((GetCell(cell) & (1 << 4)) == 0)
+            if ((GetCell(cell) & (1 << 4)) == 0)
                 return base.GetCell(cell, Line, SFPoibt);
             Bitmap t = new Bitmap(62, 62);
             Graphics g = Graphics.FromImage(t);
@@ -822,6 +823,118 @@ namespace cube_maze
             for (int j = 0; j < groups.GetLength(1); j++)
                 for (int i = 0; i < groups.GetLength(0); i++)
                     if (groups[i, j] == A) groups[i, j] = B;
+        }
+    }
+    class MazeOriented : MazeNormal
+    {
+        public MazeOriented() : base()
+        {
+            StartRec();
+        }
+        public MazeOriented(int width, int height) : base(width, height)
+        {
+            StartRec();
+        }
+
+        private void StartRec()
+        {
+            int[,] groups = new int[Width, Height];
+            for (int j = 0; j < Height; j++)
+                for (int i = 0; i < Width; i++)
+                    groups[i, j] = 0;
+            int numGroup = 0;
+            RecursionGenerate(groups, ref numGroup, 0);
+        }
+        private void RecursionGenerate(int[,] gr, ref int num, int myNum)
+        {
+            ++num;
+            Point3 point1 = new Point3();
+            Point3 point2;
+            while (true)
+            {
+                point1.X = rnd.Next(Width);
+                point1.Y = rnd.Next(Height);
+                if (gr[point1.X, point1.Y] == myNum)
+                {
+                    var t = GetNeighbors(point1);
+                    if (t.Length == 0) return;
+                    point2 = t[rnd.Next(t.Length)];
+                    break;
+                }
+            }
+            if (point2.Y < point1.Y)
+            {
+                maze[point2.X, point2.Y] -= 4;
+                maze[point1.X, point1.Y] -= 1;
+            }
+            else if (point2.X > point1.X)
+            {
+                maze[point2.X, point2.Y] -= 8;
+                maze[point1.X, point1.Y] -= 2;
+            }
+            else if (point2.Y > point1.Y)
+            {
+                maze[point2.X, point2.Y] -= 1;
+                maze[point1.X, point1.Y] -= 4;
+            }
+            else
+            {
+                maze[point2.X, point2.Y] -= 2;
+                maze[point1.X, point1.Y] -= 8;
+            }
+            FillTree(point2, num, gr);
+
+            KeyValuePair<Point3, int> firstBridge;
+            KeyValuePair<Point3, int> secondBridge;
+
+            while (true)
+            {
+                point1.X = rnd.Next(Width);
+                point1.Y = rnd.Next(Height);
+                if (gr[point1.X, point1.Y] == myNum)
+                {
+                    int n = rnd.Next(4);
+                    if ((n == 0 && point1.Y > 0 && gr[point1.X, point1.Y - 1] == num) ||
+                        (n == 1 && point1.X < Width - 1 && gr[point1.X + 1, point1.Y] == num) ||
+                        (n == 2 && point1.Y < Height - 1 && gr[point1.X, point1.Y + 1] == num) ||
+                        (n == 3 && point1.X > 0 && gr[point1.X - 1, point1.Y] == num))
+                    {
+                        firstBridge = new KeyValuePair<Point3, int>(point1, n);
+                        break;
+                    }
+                }
+            }
+            while (true)
+            {
+                point2.X = rnd.Next(Width);
+                point2.Y = rnd.Next(Height);
+                if (gr[point2.X, point2.Y] == num)
+                {
+                    int n = rnd.Next(4);
+                    if ((n == 0 && point2.Y > 0 && gr[point2.X, point2.Y - 1] == myNum) ||
+                        (n == 1 && point2.X < Width - 1 && gr[point2.X + 1, point2.Y] == myNum) ||
+                        (n == 2 && point2.Y < Height - 1 && gr[point2.X, point2.Y + 1] == myNum) ||
+                        (n == 3 && point2.X > 0 && gr[point2.X - 1, point2.Y] == myNum))
+                    {
+                            secondBridge = new KeyValuePair<Point3, int>(point2, n);
+                            break;
+                    }
+                }
+            }
+
+            RecursionGenerate(gr, ref num, num);
+            RecursionGenerate(gr, ref num, myNum);
+
+            maze[firstBridge.Key.X, firstBridge.Key.Y] |= (byte)(1 << firstBridge.Value);
+            maze[secondBridge.Key.X, secondBridge.Key.Y] |= (byte)(1 << secondBridge.Value);
+        }
+        private void FillTree(Point3 start, int num, int[,] gr)
+        {
+            if (gr[start.X, start.Y] == num) return;
+            gr[start.X, start.Y] = num;
+            var t = GetNeighbors(start);
+            for (int i = 0; i < t.Length; i++)
+                FillTree(t[i], num, gr);
         }
     }
 }

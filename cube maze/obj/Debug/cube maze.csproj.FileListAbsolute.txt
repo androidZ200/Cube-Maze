@@ -19,3 +19,4 @@ E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube_maze.Proper
 E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube maze.csproj.GenerateResource.cache
 E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube maze.exe
 E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube maze.pdb
+E:\YandexDisk\YandexDisk\Projects\cube maze\cube maze\obj\Debug\cube maze.csproj.CoreCompileInputs.cache

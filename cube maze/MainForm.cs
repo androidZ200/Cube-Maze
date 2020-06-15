@@ -25,12 +25,14 @@ namespace cube_maze
                 button2.ForeColor = Text;
                 button3.ForeColor = Text;
                 button4.ForeColor = Text;
+                button5.ForeColor = Text;
                 checkBox1.ForeColor = Text;
 
                 button1.BackColor = Background;
                 button2.BackColor = Background;
                 button3.BackColor = Background;
                 button4.BackColor = Background;
+                button5.BackColor = Background;
             };
             if (Light)
             {
@@ -74,6 +76,12 @@ namespace cube_maze
         {
             Game t = new Game();
             t.NewGenerate(Game.Mode.Abstract);
+            StartGame(t);
+        }
+        private void button5_Click(object sender, EventArgs e)
+        {
+            Game t = new Game();
+            t.NewGenerate(Game.Mode.Oriented);
             StartGame(t);
         }
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
